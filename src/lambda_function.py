@@ -18,18 +18,33 @@ twitter = Twython(os.environ["twitterConsumerKey"], os.environ["twitterConsumerS
                   os.environ["twitterAccessTokenKey"], os.environ["twitterAccessTokenSecret"])
 
 def lambda_handler(event, context):
-    """Reads from twitter and posts to chime webhook"""
 
     logging.info("Underpants")
+    logging.info(event)
 
-    # Check that this is an API call from IFTTT
-
-    # Grab the image at the end of the ImageURL
-
-    # Push the image into S3
-
-    # Create a PSU for the Image
-
-    # Post a tweet into Twitter with all the deets of the run
+    if "body" in event:
+        body = json.loads(event['body'])
+        if "URL" in body:
+            stravaActivity = requests.get(body['URL'])
+            if "Jonathan Jenkyn" in stravaActivity.text:
+                ## Validated
+                status = "I ran {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATIONMINS}:{DURATIONSECS} {ACTIVITYURL}".format(DISTANCEMILES=body['distance']/1609.3444,DISTANCEKM=body['distance']/1000,DURATIONMINS=int(body['duration']/60),DURATIONSECS=body['duration']%60,ACTIVITYURL=body['URL'])
+                if "ImageURL" in body and "https://" in body['ImageURL']:
+                    image = requests.get(body['ImageURL'])
+                    if image.status_code == 200:
+                        twitterImage = twitter.upload_media(media=image.content)
+                        twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
+                    else:
+                        twitter.update_status(status=status)
+                else:
+                    twitter.update_status(status=status)
 
     logging.info("Profit!")
+
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "body": ""
+    }
