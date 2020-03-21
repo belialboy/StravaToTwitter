@@ -1,0 +1,116 @@
+# Copyright 2020 Jonathan Jenkyn
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'StravaToTwitterProxy'
+
+###
+### CloudFormation Interface Metadata
+###
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Configuration
+      Parameters:
+      - pTwitterAccount
+      - pTwitterConsumerKey
+      - pTwitterConsumerSecret
+      - pTwitterAccessTokenKey
+      - pTwitterAccessTokenSecret
+    ParameterLabels:
+      pTwitterAccount:
+        default: The Twitter account to follow
+      pTwitterConsumerKey:
+        default: Twitter Consumer Key
+      pTwitterConsumerSecret:
+        default: Twitter Consumer Secret
+      pTwitterAccessTokenKey:
+        default: Twitter Access Token Key
+      pTwitterAccessTokenSecret:
+        default: Twitter Access Token Secret
+
+###
+### Template input parameters
+###
+
+Parameters:
+  pTwitterConsumerKey:
+    Type: String
+    Description: The Twitter Consumer Key (Get this from the Twitter Developer Dashboard)
+  pTwitterConsumerSecret:
+    Type: String
+    Description: The Twitter Consumer Secret (Get this from the Twitter Developer Dashboard)
+  pTwitterAccessTokenKey:
+    Type: String
+    Description: The Twitter Access Token Key (Get this from the Twitter Developer Dashboard)
+  pTwitterAccessTokenSecret:
+    Type: String
+    Description: The Twitter Access Token Secret (Get this from the Twitter Developer Dashboard)
+
+###
+### Template Resources
+###
+
+Resources:
+
+  # Our lambda function
+  rLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Timeout: 60
+      Handler: lambda_function.lambda_handler
+      CodeUri: src/
+      Policies:
+      - Statement:
+        - Sid: S3
+          Effect: Allow
+          Action:
+              - s3:*
+            Resource:
+              - !GetAtt 'S3Bucket.Arn'
+      Environment:
+        Variables:
+          twitterConsumerKey: !Ref pTwitterConsumerKey
+          twitterConsumerSecret: !Ref pTwitterConsumerSecret
+          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
+          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
+      Events:
+        putPubKey:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIGw
+            Path: /
+            Method: POST
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      AccessControl: Private
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: letLambdaUseMe
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 's3:*'
+            Resource: !GetAtt 'S3Bucket.Arn'
+
+  APIGw:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors: "'*'"
+
+Outputs:
+  ApiUrl:
+      Description: "API endpoint URL for Prod environment"
+      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+      
