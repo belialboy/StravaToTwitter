@@ -28,7 +28,10 @@ def lambda_handler(event, context):
             stravaActivity = requests.get(body['URL'])
             if "Jonathan Jenkyn" in stravaActivity.text:
                 ## Validated
-                status = "I ran {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATIONMINS}:{DURATIONSECS} {ACTIVITYURL}".format(DISTANCEMILES=body['distance']/1609.3444,DISTANCEKM=body['distance']/1000,DURATIONMINS=int(body['duration']/60),DURATIONSECS=body['duration']%60,ACTIVITYURL=body['URL'])
+                status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATIONMINS}:{DURATIONSECS} {ACTIVITYURL}".format(TYPE=body['type'],DISTANCEMILES=body['distance']/1609.3444,DISTANCEKM=body['distance']/1000,DURATIONMINS=int(body['duration']/60),DURATIONSECS=body['duration']%60,ACTIVITYURL=body['URL'])
+                if body['type'] == 'VirtualRide':
+                    status += " @GoZwift"
+
                 if "ImageURL" in body and "https://" in body['ImageURL']:
                     image = requests.get(body['ImageURL'])
                     if image.status_code == 200:
