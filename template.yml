@@ -17,6 +17,7 @@ Metadata:
       - pTwitterConsumerSecret
       - pTwitterAccessTokenKey
       - pTwitterAccessTokenSecret
+      - pStravaName
     ParameterLabels:
       pTwitterConsumerKey:
         default: Twitter Consumer Key
@@ -26,6 +27,8 @@ Metadata:
         default: Twitter Access Token Key
       pTwitterAccessTokenSecret:
         default: Twitter Access Token Secret
+      pStravaName:
+        default: Jonathan Jenkyn
 
 ###
 ### Template input parameters
@@ -44,6 +47,9 @@ Parameters:
   pTwitterAccessTokenSecret:
     Type: String
     Description: The Twitter Access Token Secret (Get this from the Twitter Developer Dashboard)
+  pStravaName:
+    Type: String
+    Description: The name that is in your Strava Account, so that I can pair it up.
 
 ###
 ### Template Resources
@@ -65,6 +71,8 @@ Resources:
           twitterConsumerSecret: !Ref pTwitterConsumerSecret
           twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
           twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
+          stravaName: !Ref pStravaName
+          totalsTable: !Ref Totals
       Events:
         postRun:
           Type: Api
@@ -78,6 +86,21 @@ Resources:
     Properties:
       StageName: Prod
       Cors: "'*'"
+  
+  Totals:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: name
+          AttributeType: S
+        - AttributeName: body
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: name
+          KeyType: HASH
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
 
 Outputs:
   ApiUrl:

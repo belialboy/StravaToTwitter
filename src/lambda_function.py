@@ -3,11 +3,13 @@ import json
 # pylint: disable=fixme, import-error
 from twython import Twython
 from datetime import datetime
+import time
 import os
 import requests
 import boto3
 import logging
 import hashlib
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -26,9 +28,30 @@ def lambda_handler(event, context):
         body = json.loads(event['body'])
         if "URL" in body:
             stravaActivity = requests.get(body['URL'])
-            if "Jonathan Jenkyn" in stravaActivity.text:
+            if os.environ["stravaName"] in stravaActivity.text:
                 ## Validated
-                status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATIONMINS}:{DURATIONSECS} {ACTIVITYURL}".format(TYPE=body['type'],DISTANCEMILES=body['distance']/1609.3444,DISTANCEKM=body['distance']/1000,DURATIONMINS=int(body['duration']/60),DURATIONSECS=body['duration']%60,ACTIVITYURL=body['URL'])
+                ## Grab the Totals if it exists for this user
+                dynamodb = boto3.resource('dynamodb')
+                table = dynamodb.Table(os.environ["TotalsTable"])
+                content = readDDB(os.environ["stravaName"],table)
+                if not content:
+                    # First call of this function
+                    content = {datetime.datetime.now().year:{body['type']:{"distance":body['distance'],"duration":body['duration'],"count":1}}}
+                else:
+                    content = updateContent(content,body['type'],body['distance'],body['duration'])
+                writeDDB(os.environ["stravaName"],table,content)
+                
+                ytd = content[datetime.datetime.now().year][body['type']]
+                status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {COUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
+                    TYPE=body['type'],
+                    DISTANCEMILES=body['distance']/1609.3444,
+                    DISTANCEKM=body['distance']/1000,
+                    DURATION=secsToStr(body['duration']),
+                    TOTALDISTANCEMILES=ytd['distance']/1609.3444,
+                    TOTALDISTANCEKM=ytd['distance']/1000,
+                    TOTALDURATION=secsToStr(ytd['duration']),
+                    TOTALCOUNT=ytd['count'],
+                    ACTIVITYURL=body['URL'])
                 if body['type'] == 'VirtualRide':
                     status += " @GoZwift"
 
@@ -51,3 +74,60 @@ def lambda_handler(event, context):
         },
         "body": ""
     }
+
+def readDDB(stravaName, table):
+    try:
+        response = table.get_item(Key={'name': stravaName})
+    except ClientError as e:
+        return False
+    else:
+        return json.loads(response['Item']['body'])
+        
+def writeDDB(stravaName, table, content):
+    if not readDDB(stravaName,table):
+        response = table.put_item(
+           Item={
+                'name': stravaName,
+                'body': content
+            })
+    else:
+        response = table.update_item(
+                Key={
+                    'name': stravaName
+                },
+                UpdateExpression="set body=:c",
+                ExpressionAttributeValues={
+                    ':c': content
+                }
+            )
+
+def updateContent(content, activityType, distance, duration):
+    year = datetime.datetime.now().year
+    if year in content:
+        if activityType in content[year]:
+            content[year][activityType]['distance']+=distance
+            content[year][activityType]['duration']+=duration
+            content[year][activityType]['count']+=1
+        else:
+             content[year][activityType] = {
+                 "distance":distance,
+                 "duration":duration,
+                 "count":1
+             }
+    else:
+        content[year]={
+            activityType:{
+                "distance":distance,
+                "duration":duration,
+                "count":1
+            }
+        }
+    return content
+    
+def secsToStr(seconds):
+    if seconds > 86400:
+        return time.strftime("%j day(s), %H:%M:%S", time.gmtime(seconds))
+    elif seconds > 3600:
+        return time.strftime("%H:%M:%S", time.gmtime(seconds))
+    else:
+        return time.strftime("%M:%S", time.gmtime(seconds))
