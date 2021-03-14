@@ -32,16 +32,16 @@ def lambda_handler(event, context):
                 ## Validated
                 ## Grab the Totals if it exists for this user
                 dynamodb = boto3.resource('dynamodb')
-                table = dynamodb.Table(os.environ["TotalsTable"])
+                table = dynamodb.Table(os.environ["totalsTable"])
                 content = readDDB(os.environ["stravaName"],table)
                 if not content:
                     # First call of this function
-                    content = {datetime.datetime.now().year:{body['type']:{"distance":body['distance'],"duration":body['duration'],"count":1}}}
+                    content = {datetime.now().year:{body['type']:{"distance":body['distance'],"duration":body['duration'],"count":1}}}
                 else:
                     content = updateContent(content,body['type'],body['distance'],body['duration'])
                 writeDDB(os.environ["stravaName"],table,content)
                 
-                ytd = content[datetime.datetime.now().year][body['type']]
+                ytd = content[datetime.now().year][body['type']]
                 status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {COUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
                     TYPE=body['type'],
                     DISTANCEMILES=body['distance']/1609.3444,
@@ -81,6 +81,8 @@ def readDDB(stravaName, table):
     except ClientError as e:
         return False
     else:
+        if "Item" not in response:
+            return False
         return json.loads(response['Item']['body'])
         
 def writeDDB(stravaName, table, content):
@@ -102,7 +104,7 @@ def writeDDB(stravaName, table, content):
             )
 
 def updateContent(content, activityType, distance, duration):
-    year = datetime.datetime.now().year
+    year = datetime.now().year
     if year in content:
         if activityType in content[year]:
             content[year][activityType]['distance']+=distance

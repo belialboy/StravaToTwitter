@@ -73,6 +73,15 @@ Resources:
           twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
           stravaName: !Ref pStravaName
           totalsTable: !Ref Totals
+      Policies:
+      - Statement:
+        - Sid: DynamoDBAccess
+          Effect: Allow
+          Action:
+          - dynamodb:UpdateItem
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+          Resource: !GetAtt Totals.Arn
       Events:
         postRun:
           Type: Api
@@ -92,8 +101,6 @@ Resources:
     Properties: 
       AttributeDefinitions: 
         - AttributeName: name
-          AttributeType: S
-        - AttributeName: body
           AttributeType: S
       KeySchema: 
         - AttributeName: name
