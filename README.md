@@ -40,7 +40,7 @@ Once deployed, it will exit with an `ApiUrl`. You should now update your IFTTT W
 
 It's really tricky to test this, as it will start to update your yearly values.
 
-```curl -XPOST -H "Content-type: application/json" -d '{"URL":"https://www.strava.com/activities/ONEOFYOURS","ImageURL":"boink","distance":1,"duration":60,"type":"Test"}' 'https://om4z12s3k2.execute-api.eu-west-1.amazonaws.com/Prod/'```
+```curl -XPOST -H "Content-type: application/json" -d '{"URL":"https://www.strava.com/activities/ONEOFYOURS","ImageURL":"boink","distance":1,"duration":60,"type":"Test"}' 'https://ab1cd2ef3.execute-api.eu-west-1.amazonaws.com/Prod/'```
 
 This will post into your Twitter feed, so get ready to delete it!
 
