@@ -9,6 +9,7 @@ import requests
 import boto3
 import logging
 import hashlib
+import math
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger()
@@ -128,7 +129,7 @@ def updateContent(content, activityType, distance, duration):
     
 def secsToStr(seconds):
     if seconds > 86400:
-        return time.strftime("%j day(s), %H:%M:%S", time.gmtime(seconds))
+        return "{} day(s) {}".format(math.floor(seconds/86400),time.strftime("%H:%M:%S", time.gmtime(seconds)))
     elif seconds > 3600:
         return time.strftime("%H:%M:%S", time.gmtime(seconds))
     else:
