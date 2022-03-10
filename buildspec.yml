@@ -14,7 +14,7 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      
+      - echo pStrava name is $pStravaName
       - echo Entered the build phase ...
       #Lambda deploy reference
       #https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-deploying.html
@@ -23,5 +23,5 @@ phases:
       # Package SAM template
       - sam build
       # Deploy packaged SAM template
-      - sam deploy --stack-name 'Strava2TwitterAuto' --s3-bucket "strava2twittercode" --capabilities "CAPABILITY_IAM" --parameter-overrides 'ParameterKey=pStravaName,ParameterValue=$pStravaName ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret'
+      - sam deploy --stack-name 'Strava2TwitterAuto' --s3-bucket "strava2twittercode" --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaName,ParameterValue=$pStravaName ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
       - echo Done `date`
