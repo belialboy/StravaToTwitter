@@ -1,6 +1,5 @@
 version: 0.2
 env:
-  shell: shell-tag
   variables:
     pStravaName: "Jonathan Jenkyn"
   parameter-store:
