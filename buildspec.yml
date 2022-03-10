@@ -22,6 +22,6 @@ phases:
       # Package SAM template
       - sam build
       # Deploy packaged SAM template
-      - sam deploy --parameter-overrides 'ParameterKey=pStravaName,ParameterValue=$pStravaName ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret'
+      - sam deploy --stack-name 'Strava2TwitterAuto' --parameter-overrides 'ParameterKey=pStravaName,ParameterValue=$pStravaName ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret'
 
       - echo Done `date`
