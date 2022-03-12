@@ -84,7 +84,10 @@ def readDDB(stravaName, table):
     else:
         if "Item" not in response:
             return False
-        return json.loads(response['Item']['body'])
+        if isinstance(response['Item']['body'], dict):
+          return response['Item']['body']
+        elif isinstance(response['Item']['body'], str):
+          return json.loads(response['Item']['body'])
         
 def writeDDB(stravaName, table, content):
     if not readDDB(stravaName,table):
