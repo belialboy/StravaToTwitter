@@ -42,7 +42,7 @@ def lambda_handler(event, context):
                     content = updateContent(content,body['type'],body['distance'],body['duration'])
                 writeDDB(os.environ["stravaName"],table,content)
                 
-                ytd = content[datetime.now().year][body['type']]
+                ytd = content[str(datetime.now().year)][body['type']]
                 status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {COUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
                     TYPE=body['type'],
                     DISTANCEMILES=body['distance']/1609.3444,
