@@ -46,7 +46,7 @@ def lambda_handler(event, context):
                 
                 ytd = content[str(datetime.now().year)][body['type']]
                 logging.info(ytd)
-                status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {COUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
+                status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
                     TYPE=body['type'],
                     DISTANCEMILES=body['distance']/1609,
                     DISTANCEKM=body['distance']/1000,
