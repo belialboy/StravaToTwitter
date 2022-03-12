@@ -37,7 +37,7 @@ def lambda_handler(event, context):
                 content = readDDB(os.environ["stravaName"],table)
                 if not content:
                     # First call of this function
-                    content = {datetime.now().year:{body['type']:{"distance":body['distance'],"duration":body['duration'],"count":1}}}
+                    content = {str(datetime.now().year):{body['type']:{"distance":body['distance'],"duration":body['duration'],"count":1}}}
                 else:
                     content = updateContent(content,body['type'],body['distance'],body['duration'])
                 writeDDB(os.environ["stravaName"],table,content)
