@@ -62,13 +62,16 @@ def lambda_handler(event, context):
                     image = requests.get(body['ImageURL'])
                     if image.status_code == 200:
                         twitterImage = twitter.upload_media(media=image.content)
-                        twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
+                        if not debug:
+                          twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
                     else:
                       if not debug:
                         twitter.update_status(status=status)
                 else:
                   if not debug:
                     twitter.update_status(status=status)
+  
+                logging.info(status)
 
     logging.info("Profit!")
 
@@ -94,6 +97,8 @@ def readDDB(stravaName, table):
           return json.loads(response['Item']['body'])
         
 def writeDDB(stravaName, table, content):
+  logging.info("Writting the following as the new content")
+  logging.info(content)
     if not readDDB(stravaName,table):
         response = table.put_item(
            Item={
