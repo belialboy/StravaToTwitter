@@ -45,6 +45,7 @@ def lambda_handler(event, context):
                 writeDDB(os.environ["stravaName"],table,content)
                 
                 ytd = content[str(datetime.now().year)][body['type']]
+                logging.info(json.dumps(ytd,indent=4, sort_keys=True))
                 status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {COUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
                     TYPE=body['type'],
                     DISTANCEMILES=body['distance']/1609,
