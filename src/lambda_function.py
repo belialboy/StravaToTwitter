@@ -106,18 +106,24 @@ def writeDDB(stravaName, table, content):
 
 def updateContent(content, activityType, distance, duration):
     year = datetime.now().year
+    logging.info(content)
+    logging.info(year)
     if year in content:
+        logging.info("Found year")
         if activityType in content[year]:
+            logging.info("Found activity")
             content[year][activityType]['distance']+=distance
             content[year][activityType]['duration']+=duration
             content[year][activityType]['count']+=1
         else:
-             content[year][activityType] = {
-                 "distance":distance,
-                 "duration":duration,
-                 "count":1
-             }
+            logging.info("New activity")
+            content[year][activityType] = {
+              "distance":distance,
+              "duration":duration,
+              "count":1
+            }
     else:
+        logging.info("New year!")
         content[year]={
             activityType:{
                 "distance":distance,
