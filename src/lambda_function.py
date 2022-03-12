@@ -105,7 +105,7 @@ def writeDDB(stravaName, table, content):
             )
 
 def updateContent(content, activityType, distance, duration):
-    year = datetime.now().year
+    year = str(datetime.now().year)
     logging.info(content)
     logging.info(year)
     if year in content:
