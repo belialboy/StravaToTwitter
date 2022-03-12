@@ -97,24 +97,24 @@ def readDDB(stravaName, table):
           return json.loads(response['Item']['body'])
         
 def writeDDB(stravaName, table, content):
-  logging.info("Writting the following as the new content")
+  logging.info("Writing the following as the new content")
   logging.info(content)
-    if not readDDB(stravaName,table):
-        response = table.put_item(
-           Item={
-                'name': stravaName,
-                'body': content
-            })
-    else:
-        response = table.update_item(
-                Key={
-                    'name': stravaName
-                },
-                UpdateExpression="set body=:c",
-                ExpressionAttributeValues={
-                    ':c': content
-                }
-            )
+  if not readDDB(stravaName,table):
+      response = table.put_item(
+         Item={
+              'name': stravaName,
+              'body': content
+          })
+  else:
+      response = table.update_item(
+              Key={
+                  'name': stravaName
+              },
+              UpdateExpression="set body=:c",
+              ExpressionAttributeValues={
+                  ':c': content
+              }
+          )
 
 def updateContent(content, activityType, distance, duration):
     year = str(datetime.now().year)
