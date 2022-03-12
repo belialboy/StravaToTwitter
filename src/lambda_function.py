@@ -12,6 +12,8 @@ import hashlib
 import math
 from botocore.exceptions import ClientError
 
+debug = true
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -45,10 +47,10 @@ def lambda_handler(event, context):
                 ytd = content[str(datetime.now().year)][body['type']]
                 status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {COUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
                     TYPE=body['type'],
-                    DISTANCEMILES=body['distance']/1609.3444,
+                    DISTANCEMILES=body['distance']/1609,
                     DISTANCEKM=body['distance']/1000,
                     DURATION=secsToStr(body['duration']),
-                    TOTALDISTANCEMILES=ytd['distance']/1609.3444,
+                    TOTALDISTANCEMILES=ytd['distance']/1609,
                     TOTALDISTANCEKM=ytd['distance']/1000,
                     TOTALDURATION=secsToStr(ytd['duration']),
                     TOTALCOUNT=ytd['count'],
@@ -62,8 +64,10 @@ def lambda_handler(event, context):
                         twitterImage = twitter.upload_media(media=image.content)
                         twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
                     else:
+                      if not debug:
                         twitter.update_status(status=status)
                 else:
+                  if not debug:
                     twitter.update_status(status=status)
 
     logging.info("Profit!")
