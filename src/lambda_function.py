@@ -148,8 +148,8 @@ def updateContent(content, activityType, distance, duration):
     
 def secsToStr(seconds):
     if seconds > 86400:
-        return "{} day(s) {}".format(math.floor(seconds/86400),time.strftime("%H:%M:%S", time.gmtime(seconds)))
+        return "{} day(s) {}".format(math.floor(seconds/86400),time.strftime("%Hh %Mm %Ss", time.gmtime(seconds)))
     elif seconds > 3600:
-        return time.strftime("%H:%M:%S", time.gmtime(seconds))
+        return time.strftime("%Hhr %Mmins %Sseconds", time.gmtime(seconds))
     else:
-        return time.strftime("%M:%S", time.gmtime(seconds))
+        return time.strftime("%M minutes and %S seconds", time.gmtime(seconds))
