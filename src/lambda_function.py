@@ -12,7 +12,7 @@ import hashlib
 import math
 from botocore.exceptions import ClientError
 
-debug = true
+debug = True
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
