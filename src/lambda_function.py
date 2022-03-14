@@ -125,8 +125,8 @@ def updateContent(content, activityType, distance, duration):
         logging.info("Found year")
         if activityType in content[year]:
             logging.info("Found activity")
-            content[year][activityType]['distance']+=distance
-            content[year][activityType]['duration']+=duration
+            content[year][activityType]['distance']=content[year][activityType]['distance']+distance
+            content[year][activityType]['duration']=content[year][activityType]['duration']+duration
             content[year][activityType]['count']+=1
         else:
             logging.info("New activity")
