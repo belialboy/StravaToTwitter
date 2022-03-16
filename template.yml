@@ -63,7 +63,7 @@ Resources:
       Environment:
         Variables:
           stravaClientId: !Ref pStravaClientId
-          stravaClientSecret: !Ref StravaClientSecret
+          stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
       Policies:
       - Statement:
@@ -96,7 +96,7 @@ Resources:
           twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
           twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
           stravaClientId: !Ref pStravaClientId
-          stravaClientSecret: !Ref StravaClientSecret
+          stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
       Policies:
       - Statement:
