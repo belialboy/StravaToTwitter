@@ -1,12 +1,12 @@
 version: 0.2
 env:
-  variables:
-    pStravaName: "Jonathan Jenkyn"
   parameter-store:
     pTwitterAccessTokenKey: "pTwitterAccessTokenKey"
     pTwitterAccessTokenSecret: "pTwitterAccessTokenSecret"
     pTwitterConsumerKey: "pTwitterConsumerKey"
     pTwitterConsumerSecret: "pTwitterConsumerSecret"
+    pStravaClientId: "pStravaClientId"
+    pStravaClientSecret: "pStravaClientSecret"
     pPushBullet: "pPushBullet"
 phases:
   install:
@@ -15,7 +15,6 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - echo pStrava name is $pStravaName
       - echo Entered the build phase ...
       #Lambda deploy reference
       #https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-deploying.html
@@ -24,6 +23,6 @@ phases:
       # Package SAM template
       - sam build
       # Deploy packaged SAM template
-      - sam deploy --stack-name 'Strava2TwitterAuto' --s3-bucket "strava2twittercode" --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaName,ParameterValue='$pStravaName' ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
+      - sam deploy --stack-name 'Strava2TwitterDev' --s3-bucket "strava2twittercode" --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
       - echo Done `date`
       - curl --silent -u """$pPushBullet"":" -d type="note" -d body="Updated Strava2Twitter" -d title="AWS Codebuild" 'https://api.pushbullet.com/v2/pushes'

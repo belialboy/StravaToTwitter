@@ -1,34 +1,7 @@
 # Copyright 2020 Jonathan Jenkyn
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: 'StravaToTwitterProxy'
-
-###
-### CloudFormation Interface Metadata
-###
-
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-    - Label:
-        default: Configuration
-      Parameters:
-      - pTwitterConsumerKey
-      - pTwitterConsumerSecret
-      - pTwitterAccessTokenKey
-      - pTwitterAccessTokenSecret
-      - pStravaName
-    ParameterLabels:
-      pTwitterConsumerKey:
-        default: Twitter Consumer Key
-      pTwitterConsumerSecret:
-        default: Twitter Consumer Secret
-      pTwitterAccessTokenKey:
-        default: Twitter Access Token Key
-      pTwitterAccessTokenSecret:
-        default: Twitter Access Token Secret
-      pStravaName:
-        default: Jonathan Jenkyn
+Description: 'StravaToTwitter'
 
 ###
 ### Template input parameters
@@ -47,9 +20,12 @@ Parameters:
   pTwitterAccessTokenSecret:
     Type: String
     Description: The Twitter Access Token Secret (Get this from the Twitter Developer Dashboard)
-  pStravaName:
+  pStravaClientId:
     Type: String
-    Description: The name that is in your Strava Account, so that I can pair it up.
+    Description: The Client Id for this application.
+  pStravaClientSecret:
+    Type: String
+    Description: The Client Secret for this application
 
 ###
 ### Template Resources
@@ -58,20 +34,36 @@ Parameters:
 Resources:
 
   # Our lambda function
-  rLambdaFunction:
+  rRegisterFunction:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
       Timeout: 60
-      Handler: lambda_function.lambda_handler
+      Handler: register.lambda_handler
       CodeUri: src/
       Environment:
         Variables:
-          twitterConsumerKey: !Ref pTwitterConsumerKey
-          twitterConsumerSecret: !Ref pTwitterConsumerSecret
-          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
-          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
-          stravaName: !Ref pStravaName
+          stravaClientId: !Ref pStravaClientId
+          stravaRedirect: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess'
+      Events:
+        register:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIGw
+            Path: /register
+            Method: GET
+
+  rRegisterCompleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Timeout: 60
+      Handler: registersuccess.lambda_handler
+      CodeUri: src/
+      Environment:
+        Variables:
+          stravaClientId: !Ref pStravaClientId
+          stravaClientSecret: !Ref StravaClientSecret
           totalsTable: !Ref Totals
       Policies:
       - Statement:
@@ -83,12 +75,52 @@ Resources:
           - dynamodb:GetItem
           Resource: !GetAtt Totals.Arn
       Events:
-        postRun:
+        registesuccess:
           Type: Api
           Properties:
             RestApiId: !Ref APIGw
-            Path: /
+            Path: /registersuccess
+            Method: GET
+
+  rWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Timeout: 60
+      Handler: webhook.lambda_handler
+      CodeUri: src/
+      Environment:
+        Variables:
+          twitterConsumerKey: !Ref pTwitterConsumerKey
+          twitterConsumerSecret: !Ref pTwitterConsumerSecret
+          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
+          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
+          stravaClientId: !Ref pStravaClientId
+          stravaClientSecret: !Ref StravaClientSecret
+          totalsTable: !Ref Totals
+      Policies:
+      - Statement:
+        - Sid: DynamoDBAccess
+          Effect: Allow
+          Action:
+          - dynamodb:UpdateItem
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+          Resource: !GetAtt Totals.Arn
+      Events:
+        webhookpost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIGw
+            Path: /webhook
             Method: POST
+        webhookget:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIGw
+            Path: /webhook
+            Method: GET
+          
 
   APIGw:
     Type: AWS::Serverless::Api
@@ -100,17 +132,19 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: name
+        - AttributeName: Id
           AttributeType: S
       KeySchema: 
-        - AttributeName: name
+        - AttributeName: Id
           KeyType: HASH
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
 
 Outputs:
-  ApiUrl:
-      Description: "API endpoint URL for Prod environment"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
-      
+  RegisterUrl:
+      Description: "URL to register"
+      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/register'
+  CallbackUrl:
+      Description: "URL to register"
+      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook'
