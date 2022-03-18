@@ -37,7 +37,6 @@ Resources:
   rRegisterFunction:
     DependsOn: 
     - APIGw
-    - Totals
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
@@ -68,6 +67,10 @@ Resources:
       CodeUri: src/
       Environment:
         Variables:
+          twitterConsumerKey: !Ref pTwitterConsumerKey
+          twitterConsumerSecret: !Ref pTwitterConsumerSecret
+          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
+          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
           stravaClientId: !Ref pStravaClientId
           stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
@@ -88,8 +91,8 @@ Resources:
 
   rWebhookFunction:
     DependsOn: 
+    - rWebhookASync
     - APIGw
-    - Totals
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
@@ -98,21 +101,14 @@ Resources:
       CodeUri: src/
       Environment:
         Variables:
-          twitterConsumerKey: !Ref pTwitterConsumerKey
-          twitterConsumerSecret: !Ref pTwitterConsumerSecret
-          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
-          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
-          stravaClientId: !Ref pStravaClientId
-          stravaClientSecret: !Ref pStravaClientSecret
-          totalsTable: !Ref Totals
+          ASyncLambda: !Ref rWebhookASync
       Policies:
       - Statement:
-        - Sid: DynamoDBAccess
+        - Sid: LambdaInvoke
           Effect: Allow
           Action:
-          - dynamodb:UpdateItem
-          - dynamodb:GetItem
-          Resource: !GetAtt Totals.Arn
+          - lambda:Invoke
+          Resource: !GetAtt rWebhookASync.Arn
       Events:
         webhookpost:
           Type: Api
@@ -126,7 +122,29 @@ Resources:
             RestApiId: !Ref APIGw
             Path: /webhook
             Method: GET
-          
+  
+  rWebhookASync:
+    DependsOn: 
+    - Totals
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Timeout: 60
+      Handler: webhook.lambda_handler
+      CodeUri: src/
+      Environment:
+        Variables:
+          stravaClientId: !Ref pStravaClientId
+          stravaClientSecret: !Ref pStravaClientSecret
+          totalsTable: !Ref Totals
+      Policies:
+      - Statement:
+        - Sid: DynamoDBAccess
+          Effect: Allow
+          Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+          Resource: !GetAtt Totals.Arn
 
   APIGw:
     Type: AWS::Serverless::Api

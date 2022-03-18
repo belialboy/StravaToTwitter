@@ -20,6 +20,7 @@ def lambda_handler(event, context):
 
     logging.info("Underpants")
     logging.info(event)
+    
     if "body" in event:
         body = json.loads(event['body'])
         data = {
@@ -40,7 +41,12 @@ def lambda_handler(event, context):
                  Item={
                       'Id': atheleteId,
                       'tokens': tokens,
-                      'body': "{}"
+                      'body': "{}",
+                      'twitter': json.dumps({
+                          "twitterConsumerKey": os.environ["twitterConsumerKey"], 
+                          "twitterConsumerSecret": os.environ["twitterConsumerSecret"],
+                          "twitterAccessTokenKey": os.environ["twitterAccessTokenKey"], 
+                          "twitterAccessTokenSecret": os.environ["twitterAccessTokenSecret"]})
                   })
             
         else:
