@@ -1,15 +1,9 @@
 #!/usr/bin/env python
 import json
 # pylint: disable=fixme, import-error
-from datetime import datetime
-import time
 import os
-import requests
 import boto3
 import logging
-import hashlib
-import math
-from botocore.exceptions import ClientError
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

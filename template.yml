@@ -130,7 +130,7 @@ Resources:
     Properties:
       Runtime: python3.7
       Timeout: 60
-      Handler: webhook.lambda_handler
+      Handler: webhookasync.lambda_handler
       CodeUri: src/
       Environment:
         Variables:
