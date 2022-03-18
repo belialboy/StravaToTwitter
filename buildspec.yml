@@ -26,7 +26,7 @@ phases:
       # Package SAM template
       - sam build
       # Deploy packaged SAM template
-      - sam deploy --stack-name $stackName --s3-bucket pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
+      - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
       # Find out what the callback URL is from the stack
       - CallbackURL=$(aws cloudformation describe-stacks --stack-name $stackName --query "Stacks[0].Outputs[?OutputKey=='CallbackUrl'].OutputValue" --output text)
       # Register the webhook with Strava
