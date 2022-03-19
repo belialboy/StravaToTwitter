@@ -46,7 +46,7 @@ Resources:
       Environment:
         Variables:
           stravaClientId: !Ref pStravaClientId
-          stravaRedirect: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess'
+          stackID: !Ref "AWS::StackName"
       Events:
         register:
           Type: Api
@@ -54,6 +54,13 @@ Resources:
             RestApiId: !Ref APIGw
             Path: /register
             Method: GET
+      Policies:
+      - Statement:
+        - Sid: CloudformationAccess
+          Effect: Allow
+          Action:
+          - cloudformation:DescribeStacks
+          Resource: !Ref "AWS::StackId"
 
   rRegisterSuccessFunction:
     DependsOn: 
@@ -169,6 +176,9 @@ Outputs:
   RegisterUrl:
       Description: "URL to register"
       Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/register'
+  RegisterSuccessUrl:
+      Description: "URL for registration success"
+      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess'
   CallbackUrl:
       Description: "URL of webhook"
       Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook'
