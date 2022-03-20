@@ -23,17 +23,25 @@ def lambda_handler(event, context):
 
     if "/register/" in event['requestContext']['resourcePath']:
         # do the register path
+        logger.info("register path")
+        cloudformation = boto3.client("cloudformation")
+        stack = cloudformation.describe_stack_resources(StackName=os.environ['stackID'],LogicalResourceId="ServerlessHttpApi")
+        APIGwId = stack['StackResources']['PhysicalResourceId']
+        redirectUrl = 'https://{APIGwId}.execute-api.{REGION}.amazonaws.com/Prod/registersuccess'.format(APIGwId=APIGwId,REGION=boto3.session.Session().region_name)
+        
+        logger.info(redirectUrl)
         
         returnable = {
             "statusCode": 301,
             "headers": {
-               "headers": {"Location": "https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT}&response_type=code&scope=activity:read_all".format(CLIENT_ID=os.environ['stravaClientId'],REDIRECT=os.environ['redirectUrl']), }
+               "headers": {"Location": "https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT}&response_type=code&scope=activity:read_all".format(CLIENT_ID=os.environ['stravaClientId'],REDIRECT=redirectUrl)}
             },
             "body": ""
         }
 
     elif "/registersuccess/" in event['requestContext']['resourcePath']:
         # do request Success path
+        logger.info("registersuccess path")
         returnable = {
                 "statusCode": 400,
                 "headers": {
@@ -92,6 +100,7 @@ def lambda_handler(event, context):
         
     elif "/webhook/" in event['requestContext']['resourcePath']:
         # Do the webhook
+        logger.info("webhook path")
         if event['httpMethod'] == "GET":
             # Auth for subscription creation
             returnable = {
@@ -130,6 +139,16 @@ def lambda_handler(event, context):
                         "Content-Type": "text/html"
                     },
                     "body": "Done!"
+                }
+                
+    else:
+        logger.error("No path matched")
+        returnable = {
+                    "statusCode": 400,
+                    "headers": {
+                      "Content-Type": "text/html"
+                    },
+                    "body": "No path matched. See logs."
                 }
 
     logging.info(returnable)

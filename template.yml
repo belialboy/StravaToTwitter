@@ -52,15 +52,19 @@ Resources:
           stravaClientId: !Ref pStravaClientId
           stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
-          redirectUrl: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/registersuccess/'
+          stackId: !Ref "AWS::StackName"
           webhookASync: !Ref WebhookASync
       Events:
         HttpApiEvent:
           Type: HttpApi
-          Properties:
-            ApiId: !Ref APIGw
+
       Policies:
       - Statement:
+        - Sid: CloudformationAccess
+          Effect: Allow
+          Action:
+          - cloudformation:DescribeStackResources
+          Resource: !Ref "AWS::StackId"
         - Sid: LambdaInvoke
           Effect: Allow
           Action:
@@ -96,11 +100,6 @@ Resources:
           - dynamodb:GetItem
           Resource: !GetAtt Totals.Arn
 
-  APIGw:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      StageName: "Prod"
-
   Totals:
     Type: AWS::DynamoDB::Table
     Properties: 
@@ -113,14 +112,3 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-
-Outputs:
-  RegisterUrl:
-      Description: "URL to register"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/register/'
-  RegisterSuccessUrl:
-      Description: "URL for registration success"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/registersuccess/'
-  CallbackUrl:
-      Description: "URL of webhook"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/webhook/'
