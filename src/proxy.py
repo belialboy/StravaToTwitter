@@ -99,7 +99,7 @@ def lambda_handler(event, context):
     elif "/webhook/" in event['rawPath']:
         # Do the webhook
         logger.info("webhook path")
-        if event['httpMethod'] == "GET":
+        if event['requestContext']['http']['method'] == "GET":
             # Auth for subscription creation
             returnable = {
                 "statusCode": 200,
@@ -109,7 +109,7 @@ def lambda_handler(event, context):
                 "body": json.dumps({'hub.challenge':event['queryStringParameters']['hub.challenge']})
             }
             
-        elif event['httpMethod'] == "POST":
+        elif event['requestContext']['http']['method'] == "POST":
             # A posted event from a subscription
             returnable = {
                     "statusCode": 400,
