@@ -64,7 +64,7 @@ Resources:
 
   rRegisterSuccessFunction:
     DependsOn: 
-    - RegisterAPIGw
+    - RegisterSuccessAPIGw
     - Totals
     Type: AWS::Serverless::Function
     Properties:
@@ -92,7 +92,7 @@ Resources:
         registersuccess:
           Type: Api
           Properties:
-            RestApiId: !Ref RegisterAPIGw
+            RestApiId: !Ref RegisterSuccessAPIGw
             Path: /registersuccess
             Method: GET
 
@@ -159,6 +159,12 @@ Resources:
       StageName: Prod
       Cors: "'*'"
   
+  RegisterSuccessAPIGw:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors: "'*'"
+  
   WebhookAPIGw:
     Type: AWS::Serverless::Api
     Properties:
@@ -184,7 +190,7 @@ Outputs:
       Value: !Sub 'https://${RegisterAPIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/register'
   RegisterSuccessUrl:
       Description: "URL for registration success"
-      Value: !Sub 'https://${RegisterAPIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess'
+      Value: !Sub 'https://${RegisterSuccessAPIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess'
   CallbackUrl:
       Description: "URL of webhook"
       Value: !Sub 'https://${WebhookAPIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook'
