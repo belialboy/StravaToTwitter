@@ -35,7 +35,6 @@ Resources:
 
   ProxyLambdaFunction:
     DependsOn: 
-    - APIGw
     - Totals
     Type: AWS::Serverless::Function
     Properties:
