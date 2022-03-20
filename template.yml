@@ -52,12 +52,13 @@ Resources:
           stravaClientId: !Ref pStravaClientId
           stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
-          redirectUrl: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess/'
+          redirectUrl: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/registersuccess/'
           webhookASync: !Ref WebhookASync
       Events:
         HttpApiEvent:
           Type: HttpApi
-          ApiId: !Ref APIGw
+          Properties:
+            ApiId: !Ref APIGw
       Policies:
       - Statement:
         - Sid: LambdaInvoke
@@ -116,10 +117,10 @@ Resources:
 Outputs:
   RegisterUrl:
       Description: "URL to register"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/register/'
+      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/register/'
   RegisterSuccessUrl:
       Description: "URL for registration success"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess/'
+      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/registersuccess/'
   CallbackUrl:
       Description: "URL of webhook"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook/'
+      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/webhook/'
