@@ -21,13 +21,11 @@ def lambda_handler(event, context):
         "body": "PassThru"
     }
 
-    if "/register/" in event['requestContext']['resourcePath']:
+    if "/register/" in event['rawPath']:
         # do the register path
         logger.info("register path")
-        cloudformation = boto3.client("cloudformation")
-        stack = cloudformation.describe_stack_resources(StackName=os.environ['stackID'],LogicalResourceId="ServerlessHttpApi")
-        APIGwId = stack['StackResources']['PhysicalResourceId']
-        redirectUrl = 'https://{APIGwId}.execute-api.{REGION}.amazonaws.com/registersuccess'.format(APIGwId=APIGwId,REGION=boto3.session.Session().region_name)
+        
+        redirectUrl = 'https://{DOMAIN}/registersuccess/'.format(DOMAIN=event['requestContext']['domainName'])
         
         logger.info(redirectUrl)
         
@@ -39,7 +37,7 @@ def lambda_handler(event, context):
             "body": ""
         }
 
-    elif "/registersuccess/" in event['requestContext']['resourcePath']:
+    elif "/registersuccess/" in event['rawPath']:
         # do request Success path
         logger.info("registersuccess path")
         returnable = {
@@ -98,7 +96,7 @@ def lambda_handler(event, context):
                 }
             
         
-    elif "/webhook/" in event['requestContext']['resourcePath']:
+    elif "/webhook/" in event['rawPath']:
         # Do the webhook
         logger.info("webhook path")
         if event['httpMethod'] == "GET":

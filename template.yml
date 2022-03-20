@@ -51,7 +51,6 @@ Resources:
           stravaClientId: !Ref pStravaClientId
           stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
-          stackId: !Ref "AWS::StackName"
           webhookASync: !Ref WebhookASync
       Events:
         HttpApiEvent:
@@ -59,11 +58,6 @@ Resources:
 
       Policies:
       - Statement:
-        - Sid: CloudformationAccess
-          Effect: Allow
-          Action:
-          - cloudformation:DescribeStackResources
-          Resource: !Ref "AWS::StackId"
         - Sid: LambdaInvoke
           Effect: Allow
           Action:
