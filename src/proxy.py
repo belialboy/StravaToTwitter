@@ -27,7 +27,7 @@ def lambda_handler(event, context):
         cloudformation = boto3.client("cloudformation")
         stack = cloudformation.describe_stack_resources(StackName=os.environ['stackID'],LogicalResourceId="ServerlessHttpApi")
         APIGwId = stack['StackResources']['PhysicalResourceId']
-        redirectUrl = 'https://{APIGwId}.execute-api.{REGION}.amazonaws.com/Prod/registersuccess'.format(APIGwId=APIGwId,REGION=boto3.session.Session().region_name)
+        redirectUrl = 'https://{APIGwId}.execute-api.{REGION}.amazonaws.com/registersuccess'.format(APIGwId=APIGwId,REGION=boto3.session.Session().region_name)
         
         logger.info(redirectUrl)
         
