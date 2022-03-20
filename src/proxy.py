@@ -47,13 +47,12 @@ def lambda_handler(event, context):
                 },
                 "body": "Body had no event. Failed to register. See logs."
             }
-                
-        if "body" in event:
-            body = json.loads(event['body'])
+           
+        if "queryStringParameters" in event:
             data = {
                 'client_id': os.environ['stravaClientId'],
                 'client_secret': os.environ['stravaClientSecret'],
-                'code': body['code'],
+                'code': event['queryStringParameters']['code'],
                 'grant_type': "authorization_code"
             }
             response = requests.post("https://www.strava.com/oauth/token", json=data)
@@ -81,7 +80,7 @@ def lambda_handler(event, context):
                     "headers": {
                         "Content-Type": "text/html"
                     },
-                    "body": "Done!"
+                    "body": "Done! You're all registered!"
                 }
                 
             else:
@@ -118,9 +117,8 @@ def lambda_handler(event, context):
                     },
                     "body": "Body had no event. Failed to register. See logs."
                 }
-            if "body" in event:
-                body = json.loads(event['body'])
-                
+            if "queryStringParameters" in event:
+                body = event['queryStringParameters']
                 if "object_type" in body and "aspect_type" in body and body['object_type'] == "activity" and body['aspect_type'] == "create":
                     # Async call to the other lamda so we can return fast!
                     
