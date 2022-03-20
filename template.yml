@@ -99,7 +99,7 @@ Resources:
   rWebhookFunction:
     DependsOn: 
     - rWebhookASync
-    - APIGw
+    - WebhookAPIGw
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
