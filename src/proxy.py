@@ -146,7 +146,7 @@ def lambda_handler(event, context):
                     "headers": {
                       "Content-Type": "text/html"
                     },
-                    "body": "No path matched. See logs."
+                    "body": "No path matched. See logs. Doh!"
                 }
 
     logging.info(returnable)
