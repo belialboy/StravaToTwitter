@@ -59,13 +59,13 @@ def lambda_handler(event, context):
             if response.status_code == 200:
                 # write the token to the DDB
                 logger.info(response.json())
-                atheleteId = str(response.json()['athelete']['id'])
+                athleteId = str(response.json()['athlete']['id'])
                 tokens = json.dumps({"expires_at":response.json()['expires_at'],"access_token":response.json()['access_token'],"refresh_token":response.json()['refresh_token']})
                 dynamodb = boto3.resource('dynamodb')
                 table = dynamodb.Table(os.environ["totalsTable"])
                 table.put_item(
                      Item={
-                          'Id': atheleteId,
+                          'Id': athleteId,
                           'tokens': tokens,
                           'body': "{}",
                           'twitter': json.dumps({
