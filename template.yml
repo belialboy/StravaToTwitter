@@ -36,7 +36,7 @@ Resources:
   # Our lambda function
   rRegisterFunction:
     DependsOn: 
-    - APIGw
+    - RegisterAPIGw
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
@@ -51,7 +51,7 @@ Resources:
         register:
           Type: Api
           Properties:
-            RestApiId: !Ref APIGw
+            RestApiId: !Ref RegisterAPIGw
             Path: /register
             Method: GET
       Policies:
@@ -64,7 +64,7 @@ Resources:
 
   rRegisterSuccessFunction:
     DependsOn: 
-    - APIGw
+    - RegisterAPIGw
     - Totals
     Type: AWS::Serverless::Function
     Properties:
@@ -89,10 +89,10 @@ Resources:
           - dynamodb:PutItem
           Resource: !GetAtt Totals.Arn
       Events:
-        registesuccess:
+        registersuccess:
           Type: Api
           Properties:
-            RestApiId: !Ref APIGw
+            RestApiId: !Ref RegisterAPIGw
             Path: /registersuccess
             Method: GET
 
@@ -120,13 +120,13 @@ Resources:
         webhookpost:
           Type: Api
           Properties:
-            RestApiId: !Ref APIGw
+            RestApiId: !Ref WebhookAPIGw
             Path: /webhook
             Method: POST
         webhookget:
           Type: Api
           Properties:
-            RestApiId: !Ref APIGw
+            RestApiId: !Ref WebhookAPIGw
             Path: /webhook
             Method: GET
   
@@ -153,7 +153,13 @@ Resources:
           - dynamodb:GetItem
           Resource: !GetAtt Totals.Arn
 
-  APIGw:
+  RegisterAPIGw:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors: "'*'"
+  
+  WebhookAPIGw:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
@@ -175,10 +181,10 @@ Resources:
 Outputs:
   RegisterUrl:
       Description: "URL to register"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/register'
+      Value: !Sub 'https://${RegisterAPIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/register'
   RegisterSuccessUrl:
       Description: "URL for registration success"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess'
+      Value: !Sub 'https://${RegisterAPIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/registersuccess'
   CallbackUrl:
       Description: "URL of webhook"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook'
+      Value: !Sub 'https://${WebhookAPIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook'
