@@ -40,7 +40,7 @@ Resources:
     Properties:
       Runtime: python3.7
       Timeout: 60
-      Handler: register.lambda_handler
+      Handler: proxy.lambda_handler
       CodeUri: src/
       Environment:
         Variables:
