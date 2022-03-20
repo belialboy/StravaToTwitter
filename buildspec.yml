@@ -29,7 +29,7 @@ phases:
       - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
       # Find out what the callback URL is from the stack
       - APIGwId=$(aws cloudformation describe-stack-resources --stack-name $stackName --logical-resource-id="ServerlessHttpApi" --query "StackResources[0].PhysicalResourceId" --output text)
-      - CallbackURL="https://$APIGwId.execute-api.$AWS_REGION.amazonaws.com/registersuccess"
+      - CallbackURL="https://$APIGwId.execute-api.$AWS_REGION.amazonaws.com/registersuccess/"
       # Register the webhook with Strava
       - curl -X POST https://www.strava.com/api/v3/push_subscriptions -F client_id=$pStravaClientId -F client_secret=$pStravaClientSecret -F "callback_url=$CallbackURL" -F "verify_token=STRAVA"
       # Send a Pushbullet notification about the update to the stack
