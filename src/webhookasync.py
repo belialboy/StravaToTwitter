@@ -83,8 +83,8 @@ def lambda_handler(event, context):
             }
         )
 
-        if "twitter" in athelete_record:
-            twitter_creds = json.loads(athelete_record['twitter'])
+        if "twitter" in athelete_record['Item']:
+            twitter_creds = json.loads(athelete_record['Item']['twitter'])
             twitter = Twython(twitter_creds["twitterConsumerKey"], 
                 twitter_creds["twitterConsumerSecret"],
                 twitter_creds["twitterAccessTokenKey"], 
