@@ -25,7 +25,7 @@ def lambda_handler(event, context):
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table(os.environ["totalsTable"])
     
-    athelete_record = table.get_item(Key={'Id': event['owner_id']})
+    athelete_record = table.get_item(Key={'Id': str(event['owner_id'])})
     logger.info(athelete_record)
     
     # check tokens still valid
@@ -45,7 +45,7 @@ def lambda_handler(event, context):
 
             table.update_item(
                 Key={
-                    'Id': event['owner_id']
+                    'Id': str(event['owner_id'])
                 },
                 UpdateExpression="set tokens=:c",
                 ExpressionAttributeValues={
@@ -75,7 +75,7 @@ def lambda_handler(event, context):
             content = updateContent(json.loads(athelete_record['Item']['body']),activity_json['type'],activity_json['distance'],activity_json['elapsed_time'])
         table.update_item(
             Key={
-                'Id': event['owner_id']
+                'Id': str(event['owner_id'])
             },
             UpdateExpression="set body=:c",
             ExpressionAttributeValues={
