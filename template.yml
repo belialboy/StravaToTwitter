@@ -61,7 +61,7 @@ Resources:
         - Sid: LambdaInvoke
           Effect: Allow
           Action:
-          - lambda:Invoke
+          - lambda:InvokeFunction
           Resource: !GetAtt WebhookASync.Arn
         - Sid: DynamoDBAccess
           Effect: Allow
