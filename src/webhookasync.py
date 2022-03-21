@@ -86,7 +86,6 @@ def lambda_handler(event, context):
 
         if "twitter" in athelete_record['Item']:
             twitter_creds = json.loads(athelete_record['Item']['twitter'])
-            logger.info(twitter_creds)
             twitter = Twython(twitter_creds["twitterConsumerKey"], 
                 twitter_creds["twitterConsumerSecret"],
                 twitter_creds["twitterAccessTokenKey"], 
@@ -111,9 +110,16 @@ def lambda_handler(event, context):
             if "photos" in activity_json and "primary" in activity_json['photos'] and "urls" in activity_json['photos']['primary'] and "600" in activity_json['photos']['primary']['urls']:
                 image = requests.get(activity_json['photos']['primary']['urls']['600'])
                 if image.status_code == 200:
-                    twitterImage = twitter.upload_media(media=image.raw)
-                    if not debug:
-                      twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
+                    try:
+                        twitterImage = twitter.upload_media(media=image.content)
+                    except Exception as e:
+                        logger.error("Failed to upload media from {} to twitter".format(activity_json['photos']['primary']['urls']['600']))
+                        logger.error(e)
+                        if not debug:
+                            twitter.update_status(status=status)
+                    else:
+                        if not debug:
+                          twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
                 else:
                   if not debug:
                     twitter.update_status(status=status)

@@ -105,3 +105,49 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+  
+  GetAPIAddress:
+    DependsOn: 
+    - ProxyLambdaFunction
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Timeout: 60
+      Handler: index.lambda_handler
+      InlineCode: |
+        import json, boto3, cfnresponse
+        
+        def lambda_handler(event, context):
+          cfn=boto3.client("cloudformation")
+          ServerlessHttpApi=cfn.describe_stack_resource(
+              StackName=os.environ['StackName'],
+              LogicalResourceId="ServerlessHttpApi"
+          )
+          BASEURL="https://{RESOURCEID}.execute-api.{REGION}.amazonaws.com/".format(RESOURCEID=ServerlessHttpApi["StackResourceDetail"]['PhysicalResourceId'],REGION=boto3.session.Session().region_name)
+          data = {
+            "webhook" : "{BASEURL}webhook/".format(BASEURL=BASEURL),
+            "register": "{BASEURL}register/".format(BASEURL=BASEURL)
+          }
+          cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "CustomResourcePhysicalID")
+          
+      Policies:
+      - Statement:
+        - Sid: CloudFormationAccess
+          Effect: Allow
+          Action:
+          - cloudformation:DescribeStackResource
+          Resource: !Ref "AWS::StackID"
+        
+  GetAPIAddress:
+    Type: 'Custom::APIAddress'
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt GetAPIAddressLambda.Arn
+      StackName: !Ref "AWS::StackName"
+Outputs:
+  WebhookURL:
+    Description: This is the URL that you need to set up the callback. This is called the callback URL in Strava parlance
+    Value: !GetAtt GetAPIAddress.webhook
+  RegisterURL:
+    Description: This is the URL that users will use to register with you through their Strava account
+    Value: !GetAtt GetAPIAddress.register

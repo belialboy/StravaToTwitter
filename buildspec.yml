@@ -24,6 +24,8 @@ phases:
       # Deploy packaged SAM template
       - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
       # Find out what the callback URL is from the stack
+  post_build:
+    commands:
       - APIGwId=$(aws cloudformation describe-stack-resources --stack-name $stackName --logical-resource-id="ServerlessHttpApi" --query "StackResources[0].PhysicalResourceId" --output text)
       - CallbackURL="https://$APIGwId.execute-api.$AWS_REGION.amazonaws.com/webhook/"
       # Check registration status
