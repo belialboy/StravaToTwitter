@@ -106,7 +106,7 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
   
-  GetAPIAddress:
+  GetAPIAddressLambda:
     DependsOn: 
     - ProxyLambdaFunction
     Type: AWS::Serverless::Function
