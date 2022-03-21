@@ -115,7 +115,26 @@ Resources:
       Timeout: 60
       Handler: index.lambda_handler
       InlineCode: |
-        import json, boto3, cfnresponse
+        import json, boto3
+        from botocore.vendored import requests
+ 
+        SUCCESS = "SUCCESS"
+        FAILED = "FAILED"
+         
+        def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False):
+            responseUrl = event['ResponseURL']
+         
+            print(responseUrl)
+         
+            responseBody = {}
+            responseBody['Status'] = responseStatus
+            responseBody['Reason'] = 'See the details in CloudWatch Log Stream: ' + context.log_stream_name
+            responseBody['PhysicalResourceId'] = physicalResourceId or context.log_stream_name
+            responseBody['StackId'] = event['StackId']
+            responseBody['RequestId'] = event['RequestId']
+            responseBody['LogicalResourceId'] = event['LogicalResourceId']
+            responseBody['NoEcho'] = noEcho
+            responseBody['Data'] = responseData
         
         def lambda_handler(event, context):
           cfn=boto3.client("cloudformation")
@@ -128,7 +147,7 @@ Resources:
             "webhook" : "{BASEURL}webhook/".format(BASEURL=BASEURL),
             "register": "{BASEURL}register/".format(BASEURL=BASEURL)
           }
-          cfnresponse.send(event, context, cfnresponse.SUCCESS, data, "CustomResourcePhysicalID")
+          send(event, context, SUCCESS, data)
           
       Policies:
       - Statement:
