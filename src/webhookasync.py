@@ -91,7 +91,7 @@ def lambda_handler(event, context):
                 twitter_creds["twitterConsumerSecret"],
                 twitter_creds["twitterAccessTokenKey"], 
                 twitter_creds["twitterAccessTokenSecret"])
-            twitter.verify_credentials()
+            logger.info(twitter.verify_credentials())
             
             ytd = content[str(datetime.now().year)][activity_json['type']]
             logging.info(ytd)
@@ -111,7 +111,7 @@ def lambda_handler(event, context):
             if "photos" in activity_json and "primary" in activity_json['photos'] and "urls" in activity_json['photos']['primary'] and "600" in activity_json['photos']['primary']['urls']:
                 image = requests.get(activity_json['photos']['primary']['urls']['600'])
                 if image.status_code == 200:
-                    twitterImage = twitter.upload_media(media=image.content)
+                    twitterImage = twitter.upload_media(media=image.raw)
                     if not debug:
                       twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
                 else:
