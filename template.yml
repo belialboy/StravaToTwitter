@@ -158,12 +158,12 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
-      Timeout: 60
+      Timeout: 10
       Handler: index.lambda_handler
       Layers:
         - !FindInMap [BotoVendArnMap,!Ref "AWS::Region", layerArn]
       InlineCode: |
-        import json, boto3
+        import json, boto3, os
         from botocore.vendored import requests
  
         SUCCESS = "SUCCESS"
