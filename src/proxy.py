@@ -117,8 +117,8 @@ def lambda_handler(event, context):
                     },
                     "body": "Body had no event. Failed to register. See logs."
                 }
-            if "queryStringParameters" in event:
-                body = event['queryStringParameters']
+            if "body" in event:
+                body = json.loads(event['body'])
                 if "object_type" in body and "aspect_type" in body and body['object_type'] == "activity" and body['aspect_type'] == "create":
                     # Async call to the other lamda so we can return fast!
                     
