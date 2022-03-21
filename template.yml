@@ -190,13 +190,17 @@ Resources:
               StackName=os.environ['StackName'],
               LogicalResourceId="ServerlessHttpApi"
           )
-          BASEURL="https://{RESOURCEID}.execute-api.{REGION}.amazonaws.com/".format(RESOURCEID=ServerlessHttpApi["StackResourceDetail"]['PhysicalResourceId'],REGION=boto3.session.Session().region_name)
+          BASEURL="https://{RESOURCEID}.execute-api.{REGION}.amazonaws.com/".format(RESOURCEID=ServerlessHttpApi["StackResourceDetail"]['PhysicalResourceId'],REGION=os.environ['Region'])
           data = {
             "webhook" : "{BASEURL}webhook/".format(BASEURL=BASEURL),
             "register": "{BASEURL}register/".format(BASEURL=BASEURL)
           }
           send(event, context, SUCCESS, data)
           
+      Environment:
+        Variables:
+          StackName: !Ref "AWS::StackName"
+          Region: !Ref "AWS::Region"
       Policies:
       - Statement:
         - Sid: CloudFormationAccess
