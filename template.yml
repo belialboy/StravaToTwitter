@@ -136,7 +136,7 @@ Resources:
           Effect: Allow
           Action:
           - cloudformation:DescribeStackResource
-          Resource: !Ref "AWS::StackID"
+          Resource: !Ref "AWS::StackId"
         
   GetAPIAddress:
     Type: 'Custom::APIAddress'
