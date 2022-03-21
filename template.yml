@@ -163,9 +163,8 @@ Resources:
       Layers:
         - !FindInMap [BotoVendArnMap,!Ref "AWS::Region", layerArn]
       InlineCode: |
-        import json, boto3, os
- 
         from __future__ import print_function
+        import json, boto3, os
         import urllib3
         
         SUCCESS = "SUCCESS"
