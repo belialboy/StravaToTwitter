@@ -91,6 +91,7 @@ def lambda_handler(event, context):
                 twitter_creds["twitterConsumerSecret"],
                 twitter_creds["twitterAccessTokenKey"], 
                 twitter_creds["twitterAccessTokenSecret"])
+            twitter.verify_credentials()
             
             ytd = content[str(datetime.now().year)][activity_json['type']]
             logging.info(ytd)
