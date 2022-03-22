@@ -8,6 +8,8 @@ import boto3
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+lambda_client = boto3.client("lambda")
+
 def lambda_handler(event, context):
     
     logging.info("Underpants")
@@ -123,8 +125,6 @@ def lambda_handler(event, context):
                     # Async call to the other lamda so we can return fast!
                     
                     logger.info("Calling ASync lambda")
-                    lambda_client = boto3.client("lambda")
-                    
                     lambda_client.invoke(FunctionName=os.environ["webhookASync"],InvocationType='Event',Payload=event['body'])
                 else:
                     logger.info("Webhook event is not a new activity")

@@ -27,7 +27,19 @@ def lambda_handler(event, context):
     
     athelete_record = table.get_item(Key={'Id': str(event['owner_id'])})
     logger.info(athelete_record)
-    
+    if "last_activity_id" not in athelete_record['Item'] or event['object_id'] == athelete_record['Item']['last_activity_id']:
+        logger.info("Bailing as this is a duplicate")
+    else:
+        table.update_item(
+            Key={
+                'Id': str(event['owner_id'])
+            },
+            UpdateExpression="set last_activity_id=:c",
+            ExpressionAttributeValues={
+                ':c': event['object_id']
+            }
+        )
+        
     # check tokens still valid
     tokens = json.loads(athelete_record['Item']['tokens'])
     if int(time.time()) > int(tokens['expires_at']):
@@ -104,25 +116,30 @@ def lambda_handler(event, context):
                 TOTALDURATION=secsToStr(ytd['duration']),
                 TOTALCOUNT=ytd['count'],
                 ACTIVITYURL="https://www.strava.com/activities/{}".format(activity_json['id']))
-            if activity.json() == 'VirtualRide':
+            if activity.json()['device_name'] == 'Zwift':
                 status += " @GoZwift"
 
-            if "photos" in activity_json and "primary" in activity_json['photos'] and "urls" in activity_json['photos']['primary'] and "600" in activity_json['photos']['primary']['urls']:
-                image = requests.get(activity_json['photos']['primary']['urls']['600'])
-                if image.status_code == 200:
-                    try:
-                        twitterImage = twitter.upload_media(media=image.content)
-                    except Exception as e:
-                        logger.error("Failed to upload media from {} to twitter".format(activity_json['photos']['primary']['urls']['600']))
-                        logger.error(e)
-                        if not debug:
-                            twitter.update_status(status=status)
+            if ("photos" in activity_json and 
+                "primary" in activity_json['photos'] and 
+                activity_json['photos']['primary'] is not None and 
+                "urls" in activity_json['photos']['primary'] and 
+                "600" in activity_json['photos']['primary']['urls']):
+                    
+                    image = requests.get(activity_json['photos']['primary']['urls']['600'])
+                    if image.status_code == 200:
+                        try:
+                            twitterImage = twitter.upload_media(media=image.content)
+                        except Exception as e:
+                            logger.error("Failed to upload media from {} to twitter".format(activity_json['photos']['primary']['urls']['600']))
+                            logger.error(e)
+                            if not debug:
+                                twitter.update_status(status=status)
+                        else:
+                            if not debug:
+                              twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
                     else:
-                        if not debug:
-                          twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
-                else:
-                  if not debug:
-                    twitter.update_status(status=status)
+                      if not debug:
+                        twitter.update_status(status=status)
             else:
               if not debug:
                 twitter.update_status(status=status)
