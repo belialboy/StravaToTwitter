@@ -27,8 +27,9 @@ def lambda_handler(event, context):
     
     athelete_record = table.get_item(Key={'Id': str(event['owner_id'])})
     logger.info(athelete_record)
-    if "last_activity_id" not in athelete_record['Item'] or event['object_id'] == athelete_record['Item']['last_activity_id']:
+    if "last_activity_id" in athelete_record['Item'] and event['object_id'] == athelete_record['Item']['last_activity_id']:
         logger.info("Bailing as this is a duplicate")
+        exit()
     else:
         table.update_item(
             Key={
