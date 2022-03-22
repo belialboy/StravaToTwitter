@@ -103,11 +103,17 @@ def lambda_handler(event, context):
                 twitter_creds["twitterConsumerSecret"],
                 twitter_creds["twitterAccessTokenKey"], 
                 twitter_creds["twitterAccessTokenSecret"])
-            logger.info(twitter.verify_credentials())
+
+            strava_athlete = requests.get(
+                "https://www.strava.com/api/v3/athlete",
+                headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=tokens['access_token'])}
+                ).json()
             
             ytd = content[str(datetime.now().year)][activity_json['type']]
             logging.info(ytd)
-            status = "I did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
+            status = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
+                FIRSTNAME=strava_athlete['firstname'],
+                LASTNAME=strava_athlete['lastname'],
                 TYPE=activity_json['type'],
                 DISTANCEMILES=activity_json['distance']/1609,
                 DISTANCEKM=activity_json['distance']/1000,
@@ -117,7 +123,7 @@ def lambda_handler(event, context):
                 TOTALDURATION=secsToStr(ytd['duration']),
                 TOTALCOUNT=ytd['count'],
                 ACTIVITYURL="https://www.strava.com/activities/{}".format(activity_json['id']))
-            if activity.json()['device_name'] == 'Zwift':
+            if activity_json['device_name'] == 'Zwift':
                 status += " @GoZwift"
 
             if ("photos" in activity_json and 
