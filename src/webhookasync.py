@@ -17,6 +17,14 @@ debug = True
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+VERBTONOUN = { "VirtualRun": "virtual run",
+               "Run": "run",
+               "VirtualRide": "virtual ride",
+               "Ride": "ride",
+               "Rowing": "row",
+               "Walk": "walk"
+             }
+
 def lambda_handler(event, context):
 
     logging.info("Underpants")
@@ -26,7 +34,7 @@ def lambda_handler(event, context):
     table = dynamodb.Table(os.environ["totalsTable"])
     
     athelete_record = table.get_item(Key={'Id': str(event['owner_id'])})
-    logger.info(athelete_record)
+    logger.info("Checking for race condition")
     if "last_activity_id" in athelete_record['Item'] and event['object_id'] == athelete_record['Item']['last_activity_id']:
         logger.info("Bailing as this is a duplicate")
         exit()
@@ -111,10 +119,16 @@ def lambda_handler(event, context):
             
             ytd = content[str(datetime.now().year)][activity_json['type']]
             logging.info(ytd)
+            
+            ## Convert activity verb to a noun
+            activity_type = activity_json['type']
+            if activity_json['type'] in VERBTONOUN:
+                activity_type =  VERBTONOUN[activity_json['type']]
+                
             status = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
                 FIRSTNAME=strava_athlete['firstname'],
                 LASTNAME=strava_athlete['lastname'],
-                TYPE=activity_json['type'],
+                TYPE=activity_type,
                 DISTANCEMILES=activity_json['distance']/1609,
                 DISTANCEKM=activity_json['distance']/1000,
                 DURATION=secsToStr(activity_json['elapsed_time']),
@@ -123,8 +137,9 @@ def lambda_handler(event, context):
                 TOTALDURATION=secsToStr(ytd['duration']),
                 TOTALCOUNT=ytd['count'],
                 ACTIVITYURL="https://www.strava.com/activities/{}".format(activity_json['id']))
-            if activity_json['device_name'] == 'Zwift':
-                status += " @GoZwift"
+            if "device_name" in activity_json:
+                if activity_json['device_name'] == 'Zwift':
+                    status += " @GoZwift"
 
             if ("photos" in activity_json and 
                 "primary" in activity_json['photos'] and 
