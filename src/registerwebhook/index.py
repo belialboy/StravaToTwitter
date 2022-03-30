@@ -3,6 +3,7 @@ import json, boto3, os
 import urllib3
 import logging
 import requests
+import time
 
 SUCCESS = "SUCCESS"
 FAILED = "FAILED"
@@ -65,8 +66,26 @@ def updateLambda(new_id):
   
 def registerWebhookWithStrava(stravaBaseURL,WebhookURL,stravaAuthPayload):
   logger.info("Registering {} with strava".format(WebhookURL))
-  client = boto3.client("sts")
-  stravaAuthPayload.update({"callback_url":WebhookURL,"verify_token":str(client.get_caller_identity()["Account"])})
+  sts = boto3.client("sts")
+  accountNumber=str(sts.get_caller_identity()["Account"])
+  stravaAuthPayload.update({"callback_url":WebhookURL,"verify_token":accountNumber})
+  
+  # Check that the API is acutally deployed
+  dudpayload={"hub.verify_token":accountNumber,"hub.challenge":"15f7d1a91c1f40f8a748fd134752feb3","hub.mode":"subscribe"}
+  counter=0
+  while True:
+    response=requests.get(WebhookURL,params=dudpayload)
+    counter+=1
+    if response.status_code==200:
+      logger.info("Webhook API is enabled")
+      break
+    if counter > 10:
+      logger.error("Webhook API has failed to respond in a timely manner. Breaking.")
+      return None
+
+    logger.info("Sleeping for 5seconds to allow {} to come alive".format(WebhookURL))
+    time.sleep(5)
+    
   NewSubscription=requests.post(stravaBaseURL,stravaAuthPayload)
   if NewSubscription.status_code == 200:
     logger.info("Successfully Registered")
