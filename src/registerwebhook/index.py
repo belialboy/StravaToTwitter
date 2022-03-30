@@ -71,7 +71,7 @@ def registerWebhookWithStrava(stravaBaseURL,WebhookURL,stravaAuthPayload):
   stravaAuthPayload.update({"callback_url":WebhookURL,"verify_token":accountNumber})
   
   # Check that the API is acutally deployed
-  dudpayload={"hub.verify_token":accountNumber,"hub.challenge":"15f7d1a91c1f40f8a748fd134752feb3","hub.mode":"subscribe"}
+  dudpayload={"hub.verify_token":accountNumber,"hub.challenge":"deadbeef","hub.mode":"subscribe"}
   counter=0
   while True:
     response=requests.get(WebhookURL,params=dudpayload)
@@ -91,7 +91,7 @@ def registerWebhookWithStrava(stravaBaseURL,WebhookURL,stravaAuthPayload):
     logger.info("Successfully Registered")
     return NewSubscription.json()['id']
   else:
-    logger.error("Failed to register :(")
+    logger.error("Failed to register :( {}".format(NewSubscription.status_code))
     logger.error(NewSubscription.content)
     return None
   
@@ -124,8 +124,9 @@ def lambda_handler(event, context):
         else:
           logger.info("There's no existing subscription")
           id=registerWebhookWithStrava(stravaBaseURL,os.environ['WebhookURL'],stravaAuthPayload)
-          if updateLambda(id):
-            status = SUCCESS
+          if id is not None:
+            if updateLambda(id):
+              status = SUCCESS
       elif event['RequestType'] == "Delete":
         logger.info("Deleting current subscription")
         requests.delete(stravaBaseURL+"/"+str(CurrentSubscriptionJson[0]['id']),params=stravaAuthPayload)
