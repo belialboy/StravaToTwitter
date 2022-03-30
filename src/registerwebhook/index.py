@@ -54,7 +54,7 @@ def updateLambda(new_id):
   existing=lambdaclient.get_function_configuration(FunctionName=os.environ['WebhookLambda'])
   logger.info("Got the existing variables")
   newvariables = dict(existing['Environment']['Variables'])
-  newvariables['stravaId']=new_id
+  newvariables['stravaId']=str(new_id)
   logger.info("Updating the variables to include the stravaId")
   UpdateRequest=lambdaclient.update_function_configuration(FunctionName=os.environ['WebhookLambda'],Environment={'Variables':newvariables})
   if "Error" in UpdateRequest['Environment']:
