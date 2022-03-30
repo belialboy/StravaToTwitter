@@ -1,7 +1,7 @@
 # Copyright 2020 Jonathan Jenkyn
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: 'StravaToTwitter'
+Description: 'https://github.com/belialboy/StravaToTwitter/'
 
 ###
 ### Template input parameters
@@ -27,52 +27,6 @@ Parameters:
     Type: String
     Description: The Client Secret for this application
 
-Mappings:
-  BotoVendArnMap:
-    ap-northeast-1:
-      layerArn: "arn:aws:lambda:ap-northeast-1:249908578461:layer:AWSLambda-Python-AWS-SDK:4"
-    us-east-1:
-      layerArn: "arn:aws:lambda:us-east-1:668099181075:layer:AWSLambda-Python-AWS-SDK:4"
-    ap-southeast-1:
-      layerArn: "arn:aws:lambda:ap-southeast-1:468957933125:layer:AWSLambda-Python-AWS-SDK:4"
-    eu-west-1:
-      layerArn: "arn:aws:lambda:eu-west-1:399891621064:layer:AWSLambda-Python-AWS-SDK:4"
-    us-west-1:
-      layerArn: "arn:aws:lambda:us-west-1:325793726646:layer:AWSLambda-Python-AWS-SDK:4"
-    ap-east-1:
-      layerArn: "arn:aws:lambda:ap-east-1:118857876118:layer:AWSLambda-Python-AWS-SDK:4"
-    ap-northeast-2:
-      layerArn: "arn:aws:lambda:ap-northeast-2:296580773974:layer:AWSLambda-Python-AWS-SDK:4"
-    ap-northeast-3:
-      layerArn: "arn:aws:lambda:ap-northeast-3:961244031340:layer:AWSLambda-Python-AWS-SDK:4"
-    ap-south-1:
-      layerArn: "arn:aws:lambda:ap-south-1:631267018583:layer:AWSLambda-Python-AWS-SDK:4"
-    ap-southeast-2:
-      layerArn: "arn:aws:lambda:ap-southeast-2:817496625479:layer:AWSLambda-Python-AWS-SDK:4"
-    ca-central-1:
-      layerArn: "arn:aws:lambda:ca-central-1:778625758767:layer:AWSLambda-Python-AWS-SDK:4"
-    eu-central-1:
-      layerArn: "arn:aws:lambda:eu-central-1:292169987271:layer:AWSLambda-Python-AWS-SDK:4"
-    eu-north-1:
-      layerArn: "arn:aws:lambda:eu-north-1:642425348156:layer:AWSLambda-Python-AWS-SDK:4"
-    eu-west-2:
-      layerArn: "arn:aws:lambda:eu-west-2:142628438157:layer:AWSLambda-Python-AWS-SDK:4"
-    eu-west-3:
-      layerArn: "arn:aws:lambda:eu-west-3:959311844005:layer:AWSLambda-Python-AWS-SDK:4"
-    sa-east-1:
-      layerArn: "arn:aws:lambda:sa-east-1:640010853179:layer:AWSLambda-Python-AWS-SDK:4"
-    us-east-2:
-      layerArn: "arn:aws:lambda:us-east-2:259788987135:layer:AWSLambda-Python-AWS-SDK:4"
-    us-west-2:
-      layerArn: "arn:aws:lambda:us-west-2:420165488524:layer:AWSLambda-Python-AWS-SDK:5"
-    cn-north-1:
-      layerArn: "arn:aws-cn:lambda:cn-north-1:683298794825:layer:AWSLambda-Python-AWS-SDK:4"
-    cn-northwest-1:
-      layerArn: "arn:aws-cn:lambda:cn-northwest-1:382066503313:layer:AWSLambda-Python-AWS-SDK:4"
-    us-gov-west:
-      layerArn: "arn:aws-us-gov:lambda:us-gov-west-1:556739011827:layer:AWSLambda-Python-AWS-SDK:4"
-    us-gov-east:
-      layerArn: "arn:aws-us-gov:lambda:us-gov-east-1:138526772879:layer:AWSLambda-Python-AWS-SDK:4"
 ###
 ### Template Resources
 ###
@@ -87,8 +41,8 @@ Resources:
     Properties:
       Runtime: python3.7
       Timeout: 60
-      Handler: proxy.lambda_handler
-      CodeUri: src/
+      Handler: index.lambda_handler
+      CodeUri: src/proxy/
       Environment:
         Variables:
           twitterConsumerKey: !Ref pTwitterConsumerKey
@@ -102,7 +56,6 @@ Resources:
       Events:
         HttpApiEvent:
           Type: HttpApi
-
       Policies:
       - Statement:
         - Sid: LambdaInvoke
@@ -124,8 +77,8 @@ Resources:
     Properties:
       Runtime: python3.7
       Timeout: 60
-      Handler: webhookasync.lambda_handler
-      CodeUri: src/
+      Handler: index.lambda_handler
+      CodeUri: src/webhook/
       Environment:
         Variables:
           stravaClientId: !Ref pStravaClientId
@@ -166,64 +119,7 @@ Resources:
       Runtime: python3.7
       Timeout: 10
       Handler: index.lambda_handler
-      InlineCode: |
-        from __future__ import print_function
-        import json, boto3, os
-        import urllib3
-        
-        SUCCESS = "SUCCESS"
-        FAILED = "FAILED"
-        
-        http = urllib3.PoolManager()
-        
-        def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
-            responseUrl = event['ResponseURL']
-        
-            print(responseUrl)
-        
-            responseBody = {
-                'Status' : responseStatus,
-                'Reason' : reason or "See the details in CloudWatch Log Stream: {}".format(context.log_stream_name),
-                'PhysicalResourceId' : physicalResourceId or context.log_stream_name,
-                'StackId' : event['StackId'],
-                'RequestId' : event['RequestId'],
-                'LogicalResourceId' : event['LogicalResourceId'],
-                'NoEcho' : noEcho,
-                'Data' : responseData
-            }
-        
-            json_responseBody = json.dumps(responseBody)
-        
-            print("Response body:")
-            print(json_responseBody)
-        
-            headers = {
-                'content-type' : '',
-                'content-length' : str(len(json_responseBody))
-            }
-        
-            try:
-                response = http.request('PUT', responseUrl, headers=headers, body=json_responseBody)
-                print("Status code:", response.status)
-        
-        
-            except Exception as e:
-        
-                print("send(..) failed executing http.request(..):", e)
-        
-        def lambda_handler(event, context):
-          cfn=boto3.client("cloudformation")
-          ServerlessHttpApi=cfn.describe_stack_resource(
-              StackName=os.environ['StackName'],
-              LogicalResourceId="ServerlessHttpApi"
-          )
-          BASEURL="https://{RESOURCEID}.execute-api.{REGION}.amazonaws.com/".format(RESOURCEID=ServerlessHttpApi["StackResourceDetail"]['PhysicalResourceId'],REGION=os.environ['Region'])
-          data = {
-            "webhook" : "{BASEURL}webhook/".format(BASEURL=BASEURL),
-            "register": "{BASEURL}register/".format(BASEURL=BASEURL)
-          }
-          send(event, context, SUCCESS, data)
-          
+      CodeUri: src/getapig/
       Environment:
         Variables:
           StackName: !Ref "AWS::StackName"
@@ -252,124 +148,7 @@ Resources:
       Runtime: python3.7
       Timeout: 10
       Handler: index.lambda_handler
-      Layers:
-        - !FindInMap [BotoVendArnMap,!Ref "AWS::Region", layerArn]
-      InlineCode: |
-        from __future__ import print_function
-        import json, boto3, os
-        import urllib3
-        import logging
-        from botocore.vendored import requests
-        
-        SUCCESS = "SUCCESS"
-        FAILED = "FAILED"
-        
-        logger = logging.getLogger()
-        logger.setLevel(logging.INFO)
-        
-        http = urllib3.PoolManager()
-        
-        def send(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
-            responseUrl = event['ResponseURL']
-        
-            print(responseUrl)
-        
-            responseBody = {
-                'Status' : responseStatus,
-                'Reason' : reason or "See the details in CloudWatch Log Stream: {}".format(context.log_stream_name),
-                'PhysicalResourceId' : physicalResourceId or context.log_stream_name,
-                'StackId' : event['StackId'],
-                'RequestId' : event['RequestId'],
-                'LogicalResourceId' : event['LogicalResourceId'],
-                'NoEcho' : noEcho,
-                'Data' : responseData
-            }
-        
-            json_responseBody = json.dumps(responseBody)
-        
-            print("Response body:")
-            print(json_responseBody)
-        
-            headers = {
-                'content-type' : '',
-                'content-length' : str(len(json_responseBody))
-            }
-        
-            try:
-                response = http.request('PUT', responseUrl, headers=headers, body=json_responseBody)
-                print("Status code:", response.status)
-        
-        
-            except Exception as e:
-        
-                print("send(..) failed executing http.request(..):", e)
-                
-        def updateLambda(new_id):
-          logger.info("Updating lambda function ({}) environment variables".format(os.environ['WebhookLambda']))
-          lambdaclient=boto3.client("lambda")
-          existing=lambdaclient.get_function_configuration(FunctionName=os.environ['WebhookLambda'])
-          logger.info("Got the existing variables")
-          newvariables = dict(existing['Environment']['Variables'])
-          newvariables['stravaId']=new_id
-          logger.info("Updating the variables to include the stravaId")
-          UpdateRequest=lambdaclient.update_function_configuration(FunctionName=os.environ['WebhookLambda'],Environment={'Variables':newvariables})
-          if "Error" in UpdateRequest['Environment']:
-            logger.error("Failed to update {}: {} - {}".format(os.environ['WebhookLambda'],UpdateRequest['Environment']['Error']['ErrorCode'],UpdateRequest['Environment']['Error']['Message']))
-            return False
-          logger.info("Lambda function updated successfully")
-          return True
-          
-          
-        def registerWebhookWithStrava(stravaBaseURL,WebhookURL,stravaAuthPayload):
-          logger.info("Registering {} with strava".format(WebhookURL))
-          client = boto3.client("sts")
-          stravaAuthPayload.update({"callback_url":WebhookURL,"verify_token":str(client.get_caller_identity()["Account"])})
-          NewSubscription=requests.post(stravaBaseURL,stravaAuthPayload)
-          if NewSubscription.status_code == 200:
-            logger.info("Successfully Registered")
-            return NewSubscription.json()['id']
-          else:
-            logger.error("Failed to register :(")
-            return None
-          
-        def lambda_handler(event, context):
-          data = {}
-          stravaBaseURL="https://www.strava.com/api/v3/push_subscriptions"
-          status = FAILED
-          # Get Current Subscription
-          try:
-            stravaAuthPayload={"client_id":os.environ['stravaClientId'],"client_secret":os.environ['stravaClientSecret']}
-            CurrentSubscription=requests.get(stravaBaseURL,params=stravaAuthPayload)
-            if CurrentSubscription.status_code == 200:
-              logger.info("Got the Current Subscription from Strava")
-              CurrentSubscriptionJson=CurrentSubscription.json()
-              logger.info("This is a {} event from Cloudformation".format(event['RequestType']))
-              if event['RequestType'] == "Create" or event['RequestType'] == "Update":
-                if len(CurrentSubscriptionJson) == 1:
-                  logger.info("There's an existing subscription")
-                  if CurrentSubscriptionJson[0]['callback_url'] != os.environ['WebhookURL']:
-                    logger.info("The current subscription ({}) is not the same as this deployment ({})".format(CurrentSubscriptionJson[0]['callback_url'],os.environ['WebhookURL']))
-                    logger.info("Deleting current subscription")
-                    requests.delete(stravaBaseURL+"/"+CurrentSubscriptionJson[0]['id'],params=stravaAuthPayload)
-                    id=registerWebhookWithStrava(stravaBaseURL,os.environ['WebhookURL'],stravaAuthPayload)
-                    if id is not None:
-                      if updateLambda(id):
-                        status = SUCCESS
-                  else:
-                    logger.info("Webhook already registered. No need to update")
-                    status = SUCCESS
-                else:
-                  if updateLambda(NewSubscription.json()['id']):
-                    status = SUCCESS
-              elif event['RequestType'] == "Delete":
-                logger.info("Deleting current subscription")
-                requests.delete(stravaBaseURL+"/"+CurrentSubscriptionJson[0]['id'],params=stravaAuthPayload)
-                status = SUCCESS
-          except Exception as e:
-            logger.error("Failed!")
-            logger.error(e)
-          send(event, context, status, {})
-          
+      CodeUri: src/registerwebhook/
       Environment:
         Variables:
           WebhookLambda: !Ref WebhookASync
