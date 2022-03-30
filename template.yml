@@ -306,13 +306,13 @@ Resources:
                 
         def updateLambda(new_id):
           logger.info("Updating lambda function ({}) environment variables".format(os.environ['WebhookLambda']))
-          lambda=boto3.client("lambda")
-          existing=lambda.get_function_configuration(FunctionName=os.environ['WebhookLambda'])
+          lambdaclient=boto3.client("lambda")
+          existing=lambdaclient.get_function_configuration(FunctionName=os.environ['WebhookLambda'])
           logger.info("Got the existing variables")
           newvariables = dict(existing['Environment']['Variables'])
           newvariables['stravaId']=new_id
           logger.info("Updating the variables to include the stravaId")
-          UpdateRequest=lambda.update_function_configuration(FunctionName=os.environ['WebhookLambda'],Environment={'Variables':newvariables})
+          UpdateRequest=lambdaclient.update_function_configuration(FunctionName=os.environ['WebhookLambda'],Environment={'Variables':newvariables})
           if "Error" in UpdateRequest['Environment']:
             logger.error("Failed to update {}: {} - {}".format(os.environ['WebhookLambda'],UpdateRequest['Environment']['Error']['ErrorCode'],UpdateRequest['Environment']['Error']['Message']))
             return False
@@ -334,7 +334,7 @@ Resources:
           
         def lambda_handler(event, context):
           data = {}
-          stravaBaseURL=https://www.strava.com/api/v3/push_subscriptions"
+          stravaBaseURL="https://www.strava.com/api/v3/push_subscriptions"
           status = FAILED
           # Get Current Subscription
           stravaAuthPayload={"client_id":os.environ['stravaClientId'],"client_secret":os.environ['stravaClientSecret']}
