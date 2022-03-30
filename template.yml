@@ -327,7 +327,7 @@ Resources:
           NewSubscription=requests.post(stravaBaseURL,stravaAuthPayload)
           if NewSubscription.status_code == 200:
             logger.info("Successfully Registered")
-            return NewSubscription.json['id']
+            return NewSubscription.json()['id']
           else:
             logger.error("Failed to register :(")
             return None
@@ -337,34 +337,37 @@ Resources:
           stravaBaseURL="https://www.strava.com/api/v3/push_subscriptions"
           status = FAILED
           # Get Current Subscription
-          stravaAuthPayload={"client_id":os.environ['stravaClientId'],"client_secret":os.environ['stravaClientSecret']}
-          CurrentSubscription=requests.get(stravaBaseURL,params=stravaAuthPayload)
-          if CurrentSubscription.status_code == 200:
-            logger.info("Got the Current Subscription from Strava")
-            CurrentSubscriptionJson=CurrentSubscription.json
-            logger.info("This is a {} event from Cloudformation".format(event['RequestType']))
-            if event['RequestType'] == "Create" or event['RequestType'] == "Update":
-              if len(CurrentSubscriptionJson) == 1:
-                logger.info("There's an existing subscription")
-                if CurrentSubscriptionJson[0]['callback_url'] != os.environ['WebhookURL']:
-                  logger.info("The current subscription ({}) is not the same as this deployment ({})".format(CurrentSubscriptionJson[0]['callback_url'],os.environ['WebhookURL']))
-                  logger.info("Deleting current subscription")
-                  requests.delete(stravaBaseURL+"/"+CurrentSubscriptionJson[0]['id'],params=stravaAuthPayload)
-                  id=registerWebhookWithStrava(stravaBaseURL,os.environ['WebhookURL'],stravaAuthPayload)
-                  if id is not None:
-                    if updateLambda(id):
-                      status = SUCCESS
+          try:
+            stravaAuthPayload={"client_id":os.environ['stravaClientId'],"client_secret":os.environ['stravaClientSecret']}
+            CurrentSubscription=requests.get(stravaBaseURL,params=stravaAuthPayload)
+            if CurrentSubscription.status_code == 200:
+              logger.info("Got the Current Subscription from Strava")
+              CurrentSubscriptionJson=CurrentSubscription.json()
+              logger.info("This is a {} event from Cloudformation".format(event['RequestType']))
+              if event['RequestType'] == "Create" or event['RequestType'] == "Update":
+                if len(CurrentSubscriptionJson) == 1:
+                  logger.info("There's an existing subscription")
+                  if CurrentSubscriptionJson[0]['callback_url'] != os.environ['WebhookURL']:
+                    logger.info("The current subscription ({}) is not the same as this deployment ({})".format(CurrentSubscriptionJson[0]['callback_url'],os.environ['WebhookURL']))
+                    logger.info("Deleting current subscription")
+                    requests.delete(stravaBaseURL+"/"+CurrentSubscriptionJson[0]['id'],params=stravaAuthPayload)
+                    id=registerWebhookWithStrava(stravaBaseURL,os.environ['WebhookURL'],stravaAuthPayload)
+                    if id is not None:
+                      if updateLambda(id):
+                        status = SUCCESS
+                  else:
+                    logger.info("Webhook already registered. No need to update")
+                    status = SUCCESS
                 else:
-                  logger.info("Webhook already registered. No need to update")
-                  status = SUCCESS
-              else:
-                if updateLambda(NewSubscription.json['id']):
-                  status = SUCCESS
-            elif event['RequestType'] == "Delete":
-              logger.info("Deleting current subscription")
-              requests.delete(stravaBaseURL+"/"+CurrentSubscriptionJson[0]['id'],params=stravaAuthPayload)
-              status = SUCCESS
-              
+                  if updateLambda(NewSubscription.json()['id']):
+                    status = SUCCESS
+              elif event['RequestType'] == "Delete":
+                logger.info("Deleting current subscription")
+                requests.delete(stravaBaseURL+"/"+CurrentSubscriptionJson[0]['id'],params=stravaAuthPayload)
+                status = SUCCESS
+          except Exception as e:
+            logger.error("Failed!")
+            logger.error(e)
           send(event, context, status, {})
           
       Environment:
@@ -388,7 +391,7 @@ Resources:
           Resource: "*"
         
   RegisterWebhook:
-    Type: 'Custom::APIAddress'
+    Type: 'Custom::RegisterWebhook'
     Version: '1.0'
     Properties:
       ServiceToken: !GetAtt RegisterWebhookLambda.Arn
