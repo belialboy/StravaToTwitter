@@ -82,6 +82,7 @@ Resources:
   ProxyLambdaFunction:
     DependsOn: 
     - Totals
+    - WebhookASync
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
@@ -119,7 +120,6 @@ Resources:
   WebhookASync:
     DependsOn: 
     - Totals
-    - ProxyLambdaFunction
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
@@ -161,7 +161,6 @@ Resources:
   GetAPIAddressLambda:
     DependsOn: 
     - ProxyLambdaFunction
-    - WebhookASync
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
@@ -246,7 +245,8 @@ Resources:
       
   RegisterWebhookLambda:
     DependsOn: 
-    - GetAPIAddress
+    - ProxyLambdaFunction
+    - WebhookASync
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
