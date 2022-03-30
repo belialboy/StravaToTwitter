@@ -1,5 +1,9 @@
 # StravaToTwitter
 
+This project deploys a SAM application that registers with Strava and allows Strava users to register with it. Once registered, any time that user registers a Strava activity, it creates a corresponding tweet that includes details about that activity, and also their year-to-date totals.
+
+As a "security dood" I've tried to use secure practices with the management of most sensitive information. Twitter credentials are stored in a DynamoDB table, as environmental variables in a Lambda function, and are also found in the ChengeSet for Cloudformation... so it's not perfect by any stretch. This is a hobby-project, and I wanted to make it as accessible as possible without burning unnecessary dollars on Secrets Manager and the like. Enjoy, and feel free to improve.
+
 ## Prerequisites
 
 To get this to function for your Strava and Twitter you will need the following:
@@ -11,9 +15,10 @@ To get this to function for your Strava and Twitter you will need the following:
         * Twitter Access Token Secret
 * [Strava Developer](https://www.strava.com/settings/api)
     * You'll need to obtain a `ClientId` and `ClientSecret` for the Application.
+    * Set your application `Authorization Callback Domain` to anything you like for the moment; You'll change this once the deployment has completed.
 * An [AWS](https://aws.amazon.com/) account (You'll be spending less than a few cent per month, so won't break the bank)
     * You'll also need the [Serverless Application Model](https://aws.amazon.com/serverless/sam/) CLI installed either on your machine, or in a [Cloud9](https://aws.amazon.com/cloud9/) environment in your AWS Account.
-    * An AWS Role in that account that you can assume to run the cloud formation used by SAM
+    * An AWS Role in that account that you can assume to run the cloudformation used by SAM
     * `git` installed on your command line
 
 ## Install
@@ -32,14 +37,7 @@ Deploy the SAM assets:
 
 This will then guide you through entering your twitter keys (mentioned above) and and Strava App id/secret. 
 
-Once complete you will need to add a subscription to the Strava Webhook API using the following, replacing the `client_id` and `client_secret` with those you captured above and the `callback_url` with the webhook output of this deployment:
-```
-curl -X POST https://www.strava.com/api/v3/push_subscriptions \
-      -F client_id=5 \
-      -F client_secret=7b2946535949ae70f015d696d8ac602830ece412 \
-      -F 'callback_url=http://a-valid.com/url' \
-      -F 'verify_token=STRAVA'
-```
+Once complete you will need to take take the domain name (The bit after `https://` and before `/register/`, i.e. `abcde12345.execute-api.eu-west-1.amazonaws.com`) of your registration URL and set that as your `Authorization Callback Domain` for your application (the very last field on the [Update Application](https://www.strava.com/settings/api) page). You can now shre the full registration URL with Strava users that want to use your application.
 
 ### Use a Code Pipeline
 
@@ -50,9 +48,11 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
     "Version": "2012-10-17",
     "Statement": [
         {
+            "Sid": "VisualEditor0",
             "Effect": "Allow",
             "Action": [
                 "cloudformation:DescribeStackEvents",
+                "cloudformation:DescribeStackResources",
                 "cloudformation:CreateStack",
                 "cloudformation:DeleteStack",
                 "cloudformation:UpdateStack",
@@ -68,15 +68,17 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
             ]
         },
         {
+            "Sid": "VisualEditor1",
             "Effect": "Allow",
             "Action": [
                 "s3:ListBucket",
                 "s3:PutObject",
                 "s3:GetObject"
             ],
-            "Resource": "arn:aws:s3:::{YOUR CODE BUCKET}/*"
+            "Resource": "arn:aws:s3:::*/*"
         },
         {
+            "Sid": "VisualEditor2",
             "Effect": "Allow",
             "Action": [
                 "s3:ListAllMyBuckets",
@@ -100,10 +102,21 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
                 "lambda:TagResource",
                 "lambda:UntagResource",
                 "lambda:UpdateFunctionCode",
-                "lambda:UpdateFunctionConfiguration"
+                "lambda:UpdateFunctionConfiguration",
+                "lambda:InvokeFunction"
             ],
             "Resource": [
-                "arn:aws:lambda:{YOUR ACCOUNT ID{:*:function:*"
+                "arn:aws:lambda:*:*:function:*"
+            ]
+        },
+        {
+            "Sid": "LambdaLayers",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:GetLayerVersion"
+            ],
+            "Resource": [
+                "arn:aws:lambda:*:*:layer:*"
             ]
         },
         {
@@ -121,7 +134,7 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
                 "iam:GetRolePolicy"
             ],
             "Resource": [
-                "arn:aws:iam::{YOUR ACCOUNT ID):role/*"
+                "arn:aws:iam::*:role/*"
             ]
         },
         {
@@ -149,16 +162,15 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
             "Sid": "APIGateway",
             "Effect": "Allow",
             "Action": [
-                "apigateway:DELETE",
-                "apigateway:GET",
-                "apigateway:PATCH",
-                "apigateway:POST",
-                "apigateway:PUT"
+                "apigateway:*"
             ],
             "Resource": [
-                "arn:aws:apigateway:*::*"
+                "*"
             ]
         }
     ]
 }
 ```
+## Future Stuff
+
+I will make the registration include a capture for twitter credentials so that I don't have to hard code these into the deployment script.
