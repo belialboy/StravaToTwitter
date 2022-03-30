@@ -73,6 +73,7 @@ def registerWebhookWithStrava(stravaBaseURL,WebhookURL,stravaAuthPayload):
     return NewSubscription.json()['id']
   else:
     logger.error("Failed to register :(")
+    logger.error(NewSubscription.content)
     return None
   
 def lambda_handler(event, context):
