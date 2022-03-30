@@ -111,7 +111,7 @@ def lambda_handler(event, context):
                         "headers": {
                             "Content-Type": "application/json"
                         },
-                        "body": "Verification token does not match expected value."
+                        "body": "Verification token does not match expected value. :("
                     }
                 else:
                     logger.info("Happy to verify the subscription")
