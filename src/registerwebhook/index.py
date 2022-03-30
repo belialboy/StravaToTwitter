@@ -87,7 +87,7 @@ def registerWebhookWithStrava(stravaBaseURL,WebhookURL,stravaAuthPayload):
     time.sleep(5)
     
   NewSubscription=requests.post(stravaBaseURL,stravaAuthPayload)
-  if NewSubscription.status_code == 200:
+  if NewSubscription.status_code == 201: # 201 = Created
     logger.info("Successfully Registered")
     return NewSubscription.json()['id']
   else:
