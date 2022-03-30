@@ -146,7 +146,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
-      Timeout: 10
+      Timeout: 60
       Handler: index.lambda_handler
       CodeUri: src/registerwebhook/
       Environment:
