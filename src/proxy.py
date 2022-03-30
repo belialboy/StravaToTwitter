@@ -102,13 +102,27 @@ def lambda_handler(event, context):
         logger.info("webhook path")
         if event['requestContext']['http']['method'] == "GET":
             # Auth for subscription creation
-            returnable = {
-                "statusCode": 200,
-                "headers": {
-                    "Content-Type": "application/json"
-                },
-                "body": json.dumps({'hub.challenge':event['queryStringParameters']['hub.challenge']})
-            }
+            if "queryStringParameters" in event and "hub.challenge" in event['queryStringParameters']:
+                sts = boto3.client("sts")
+                if "hub.verify_token" not in event ['queryStringParameters'] or event['queryStringParameters']['hub.verify_token'] != str(sts.get_caller_identity()["Account"]):
+                    logger.error("hub.verify_token is not equal to the account number. Bailing.")
+                    returnable = {
+                        "statusCode": 403,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": "Verification token does not match expected value."
+                    }
+                else:
+                    logger.info("Happy to verify the subscription")
+                    returnable = {
+                        "statusCode": 200,
+                        "headers": {
+                            "Content-Type": "application/json"
+                        },
+                        "body": json.dumps({'hub.challenge':event['queryStringParameters']['hub.challenge']})
+                    }
+            
             
         elif event['requestContext']['http']['method'] == "POST":
             # A posted event from a subscription

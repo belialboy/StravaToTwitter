@@ -26,20 +26,5 @@ phases:
       # Find out what the callback URL is from the stack
   post_build:
     commands:
-      - APIGwId=$(aws cloudformation describe-stack-resources --stack-name $stackName --logical-resource-id="ServerlessHttpApi" --query "StackResources[0].PhysicalResourceId" --output text)
-      - CallbackURL="https://$APIGwId.execute-api.$AWS_REGION.amazonaws.com/webhook/"
-      # Check registration status
-      - CurrentSubscription=$(curl -G https://www.strava.com/api/v3/push_subscriptions -d client_id=$pStravaClientId -d client_secret=$pStravaClientSecret)
-      - |
-        if [ $CurrentSubscription != "[]" ] ; then
-          SubscribedCallbackURL=$(echo $CurrentSubscription | jq -r '.[0].callback_url')
-          if [ $SubscribedCallbackURL != $CallbackURL ]; then
-            subid=$(echo $CurrentSubscription | jq -r '.[0].id' )
-            curl -X DELETE https://www.strava.com/api/v3/push_subscriptions/$subid -F client_id=$pStravaClientId -F client_secret=$pStravaClientSecret
-            curl -X POST https://www.strava.com/api/v3/push_subscriptions -F client_id=$pStravaClientId -F client_secret=$pStravaClientSecret -F "callback_url=$CallbackURL" -F "verify_token=STRAVA"
-          fi
-        else
-          curl -X POST https://www.strava.com/api/v3/push_subscriptions -F client_id=$pStravaClientId -F client_secret=$pStravaClientSecret -F "callback_url=$CallbackURL" -F "verify_token=STRAVA"
-        fi
       # Send a Pushbullet notification about the update to the stack
       - curl --silent -u """$pPushBullet"":" -d type="note" -d body="Updated $stackName" -d title="AWS Codebuild" 'https://api.pushbullet.com/v2/pushes'
