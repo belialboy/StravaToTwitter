@@ -93,7 +93,7 @@ def lambda_handler(event, context):
           if CurrentSubscriptionJson[0]['callback_url'] != os.environ['WebhookURL']:
             logger.info("The current subscription ({}) is not the same as this deployment ({})".format(CurrentSubscriptionJson[0]['callback_url'],os.environ['WebhookURL']))
             logger.info("Deleting current subscription")
-            requests.delete(stravaBaseURL+"/"+CurrentSubscriptionJson[0]['id'],params=stravaAuthPayload)
+            requests.delete(stravaBaseURL+"/"+str(CurrentSubscriptionJson[0]['id']),params=stravaAuthPayload)
             id=registerWebhookWithStrava(stravaBaseURL,os.environ['WebhookURL'],stravaAuthPayload)
             if id is not None:
               if updateLambda(id):
@@ -108,7 +108,7 @@ def lambda_handler(event, context):
             status = SUCCESS
       elif event['RequestType'] == "Delete":
         logger.info("Deleting current subscription")
-        requests.delete(stravaBaseURL+"/"+CurrentSubscriptionJson[0]['id'],params=stravaAuthPayload)
+        requests.delete(stravaBaseURL+"/"+str(CurrentSubscriptionJson[0]['id']),params=stravaAuthPayload)
         status = SUCCESS
   except Exception as e:
     logger.error("Failed!")
