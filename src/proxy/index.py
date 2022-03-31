@@ -65,17 +65,25 @@ def lambda_handler(event, context):
                 tokens = json.dumps({"expires_at":response.json()['expires_at'],"access_token":response.json()['access_token'],"refresh_token":response.json()['refresh_token']})
                 dynamodb = boto3.resource('dynamodb')
                 table = dynamodb.Table(os.environ["totalsTable"])
-                table.put_item(
-                     Item={
-                          'Id': athleteId,
-                          'tokens': tokens,
-                          'body': "{}",
-                          'twitter': json.dumps({
-                              "twitterConsumerKey": os.environ["twitterConsumerKey"], 
-                              "twitterConsumerSecret": os.environ["twitterConsumerSecret"],
-                              "twitterAccessTokenKey": os.environ["twitterAccessTokenKey"], 
-                              "twitterAccessTokenSecret": os.environ["twitterAccessTokenSecret"]})
-                      })
+                athelete_record = table.get_item(Key={'Id': athleteId})
+                if 'Item' in athelete_record:
+                    table.update_item(
+                        Key={'Id': athleteId},
+                        UpdateExpression="set tokens=:c",
+                        ExpressionAttributeValues={':c': tokens}
+                    )
+                else:
+                    table.put_item(
+                         Item={
+                              'Id': athleteId,
+                              'tokens': tokens,
+                              'body': "{}",
+                              'twitter': json.dumps({
+                                  "twitterConsumerKey": os.environ["twitterConsumerKey"], 
+                                  "twitterConsumerSecret": os.environ["twitterConsumerSecret"],
+                                  "twitterAccessTokenKey": os.environ["twitterAccessTokenKey"], 
+                                  "twitterAccessTokenSecret": os.environ["twitterAccessTokenSecret"]})
+                          })
                 
                 returnable = {
                     "statusCode": 200,
