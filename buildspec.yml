@@ -1,12 +1,15 @@
 version: 0.2
 env:
   variables:
-    pStravaName: "Jonathan Jenkyn"
+    stackName: "Strava2TwitterDev"
   parameter-store:
+    pCodeBucket: "pStrava2twitterCodeBucket"
     pTwitterAccessTokenKey: "pTwitterAccessTokenKey"
     pTwitterAccessTokenSecret: "pTwitterAccessTokenSecret"
     pTwitterConsumerKey: "pTwitterConsumerKey"
     pTwitterConsumerSecret: "pTwitterConsumerSecret"
+    pStravaClientId: "pStravaClientId"
+    pStravaClientSecret: "pStravaClientSecret"
     pPushBullet: "pPushBullet"
 phases:
   install:
@@ -15,15 +18,13 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - echo pStrava name is $pStravaName
       - echo Entered the build phase ...
-      #Lambda deploy reference
-      #https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-deploying.html
-      #Build spec reference
-      #https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
       # Package SAM template
       - sam build
       # Deploy packaged SAM template
-      - sam deploy --stack-name 'Strava2TwitterAuto' --s3-bucket "strava2twittercode" --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaName,ParameterValue='$pStravaName' ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
-      - echo Done `date`
-      - curl --silent -u """$pPushBullet"":" -d type="note" -d body="Updated Strava2Twitter" -d title="AWS Codebuild" 'https://api.pushbullet.com/v2/pushes'
+      - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
+      # Find out what the callback URL is from the stack
+  post_build:
+    commands:
+      # Send a Pushbullet notification about the update to the stack
+      - curl --silent -u """$pPushBullet"":" -d type="note" -d body="Updated $stackName" -d title="AWS Codebuild" 'https://api.pushbullet.com/v2/pushes'

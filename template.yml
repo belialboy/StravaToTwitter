@@ -1,34 +1,7 @@
 # Copyright 2020 Jonathan Jenkyn
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: 'StravaToTwitterProxy'
-
-###
-### CloudFormation Interface Metadata
-###
-
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-    - Label:
-        default: Configuration
-      Parameters:
-      - pTwitterConsumerKey
-      - pTwitterConsumerSecret
-      - pTwitterAccessTokenKey
-      - pTwitterAccessTokenSecret
-      - pStravaName
-    ParameterLabels:
-      pTwitterConsumerKey:
-        default: Twitter Consumer Key
-      pTwitterConsumerSecret:
-        default: Twitter Consumer Secret
-      pTwitterAccessTokenKey:
-        default: Twitter Access Token Key
-      pTwitterAccessTokenSecret:
-        default: Twitter Access Token Secret
-      pStravaName:
-        default: Jonathan Jenkyn
+Description: 'https://github.com/belialboy/StravaToTwitter/'
 
 ###
 ### Template input parameters
@@ -47,9 +20,12 @@ Parameters:
   pTwitterAccessTokenSecret:
     Type: String
     Description: The Twitter Access Token Secret (Get this from the Twitter Developer Dashboard)
-  pStravaName:
+  pStravaClientId:
     Type: String
-    Description: The name that is in your Strava Account, so that I can pair it up.
+    Description: The Client Id for this application.
+  pStravaClientSecret:
+    Type: String
+    Description: The Client Secret for this application
 
 ###
 ### Template Resources
@@ -57,21 +33,56 @@ Parameters:
 
 Resources:
 
-  # Our lambda function
-  rLambdaFunction:
+  ProxyLambdaFunction:
+    DependsOn: 
+    - Totals
+    - WebhookASync
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
       Timeout: 60
-      Handler: lambda_function.lambda_handler
-      CodeUri: src/
+      Handler: index.lambda_handler
+      CodeUri: src/proxy/
       Environment:
         Variables:
           twitterConsumerKey: !Ref pTwitterConsumerKey
           twitterConsumerSecret: !Ref pTwitterConsumerSecret
           twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
           twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
-          stravaName: !Ref pStravaName
+          stravaClientId: !Ref pStravaClientId
+          stravaClientSecret: !Ref pStravaClientSecret
+          totalsTable: !Ref Totals
+          webhookASync: !Ref WebhookASync
+      Events:
+        HttpApiEvent:
+          Type: HttpApi
+      Policies:
+      - Statement:
+        - Sid: LambdaInvoke
+          Effect: Allow
+          Action:
+          - lambda:InvokeFunction
+          Resource: !GetAtt WebhookASync.Arn
+        - Sid: DynamoDBAccess
+          Effect: Allow
+          Action:
+          - dynamodb:PutItem
+          Resource: !GetAtt Totals.Arn
+  # Our lambda function
+
+  WebhookASync:
+    DependsOn: 
+    - Totals
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Timeout: 60
+      Handler: index.lambda_handler
+      CodeUri: src/webhook/
+      Environment:
+        Variables:
+          stravaClientId: !Ref pStravaClientId
+          stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
       Policies:
       - Statement:
@@ -79,38 +90,92 @@ Resources:
           Effect: Allow
           Action:
           - dynamodb:UpdateItem
-          - dynamodb:PutItem
           - dynamodb:GetItem
           Resource: !GetAtt Totals.Arn
-      Events:
-        postRun:
-          Type: Api
-          Properties:
-            RestApiId: !Ref APIGw
-            Path: /
-            Method: POST
+        - Sid: STSAccess
+          Effect: Allow
+          Action:
+          - sts:GetCallerIdentity
+          Resource: "*"
 
-  APIGw:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Prod
-      Cors: "'*'"
-  
   Totals:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: name
+        - AttributeName: Id
           AttributeType: S
       KeySchema: 
-        - AttributeName: name
+        - AttributeName: Id
           KeyType: HASH
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-
-Outputs:
-  ApiUrl:
-      Description: "API endpoint URL for Prod environment"
-      Value: !Sub 'https://${APIGw}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+  
+  GetAPIAddressLambda:
+    DependsOn: 
+    - ProxyLambdaFunction
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Timeout: 10
+      Handler: index.lambda_handler
+      CodeUri: src/getapig/
+      Environment:
+        Variables:
+          StackName: !Ref "AWS::StackName"
+          Region: !Ref "AWS::Region"
+      Policies:
+      - Statement:
+        - Sid: CloudFormationAccess
+          Effect: Allow
+          Action:
+          - cloudformation:DescribeStackResource
+          Resource: !Ref "AWS::StackId"
+        
+  GetAPIAddress:
+    Type: 'Custom::APIAddress'
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt GetAPIAddressLambda.Arn
+      StackName: !Ref "AWS::StackName"
       
+  RegisterWebhookLambda:
+    DependsOn: 
+    - ProxyLambdaFunction
+    - WebhookASync
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Timeout: 60
+      Handler: index.lambda_handler
+      CodeUri: src/registerwebhook/
+      Environment:
+        Variables:
+          WebhookLambda: !Ref WebhookASync
+          WebhookURL: !GetAtt GetAPIAddress.webhook
+          stravaClientId: !Ref pStravaClientId
+          stravaClientSecret: !Ref pStravaClientSecret
+      Policies:
+      - Statement:
+        - Sid: LambdaAccess
+          Effect: Allow
+          Action:
+          - lambda:UpdateFunctionConfiguration
+          - lambda:GetFunctionConfiguration
+          Resource: !GetAtt WebhookASync.Arn
+        - Sid: STSAccess
+          Effect: Allow
+          Action:
+          - sts:GetCallerIdentity
+          Resource: "*"
+        
+  RegisterWebhook:
+    Type: 'Custom::RegisterWebhook'
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt RegisterWebhookLambda.Arn
+      
+Outputs:
+  RegisterURL:
+    Description: This is the URL that users will use to register with you through their Strava account
+    Value: !GetAtt GetAPIAddress.register
