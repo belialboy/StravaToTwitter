@@ -67,6 +67,8 @@ Resources:
           Effect: Allow
           Action:
           - dynamodb:PutItem
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
           Resource: !GetAtt Totals.Arn
   # Our lambda function
 
