@@ -93,11 +93,12 @@ def lambda_handler(event, context):
         logger.info("Got the activity")
         logger.info(activity.json())
         activity_json = activity.json()
+        base_activity_type = activity_json['type'].replace("Virtual","")
         
         if "body" not in athelete_record['Item']:
-            content = {str(datetime.now().year):{activity_json['type']:{"distance":activity_json['distance'],"duration":activity_json['elapsed_time'],"count":1}}}
+            content = {str(datetime.now().year):{base_activity_type:{"distance":activity_json['distance'],"duration":activity_json['elapsed_time'],"count":1}}}
         else:
-            content = updateContent(json.loads(athelete_record['Item']['body']),activity_json['type'],activity_json['distance'],activity_json['elapsed_time'])
+            content = updateContent(json.loads(athelete_record['Item']['body']),base_activity_type,activity_json['distance'],activity_json['elapsed_time'])
         table.update_item(
             Key={
                 'Id': str(event['owner_id'])
@@ -125,9 +126,9 @@ def lambda_handler(event, context):
             logging.info(ytd)
             
             ## Convert activity verb to a noun
-            activity_type = activity_json['type']
-            if activity_json['type'] in VERBTONOUN:
-                activity_type =  VERBTONOUN[activity_json['type']]
+            activity_type = base_activity_type
+            if base_activity_type in VERBTONOUN:
+                activity_type =  VERBTONOUN[base_activity_type]
                 
             status = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
                 FIRSTNAME=strava_athlete['firstname'],
