@@ -30,7 +30,8 @@ def lambda_handler(event, context):
     logging.info("Underpants")
     logging.info(event)
     
-    if "stravaId" in os.environ and int(event['subscription_id']) != int(os.environ['stravaId']):
+    if "stravaId" in os.environ:
+      if 'subscription_id' not in event or int(event['subscription_id']) != int(os.environ['stravaId']):
         logger.error("This request does not have the subscription_id equal to the expected value.")
         return
     
