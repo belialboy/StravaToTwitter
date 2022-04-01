@@ -84,7 +84,7 @@ def lambda_handler(event, context):
                             "https://www.strava.com/api/v3/athletes/{ID}/stats".format(ID=athleteId),
                             headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=response.json()['access_token'])}
                             )
-                        current_year = str(datetime.datetime.now().year))
+                        current_year = str(datetime.datetime.now().year)
                         data_to_add = {}
                         athelete_detail_json = athelete_detail.json()
                         if athelete_detail_json['ytd_ride_totals']['count']>0:
