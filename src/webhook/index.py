@@ -123,7 +123,7 @@ def lambda_handler(event, context):
                 headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=tokens['access_token'])}
                 ).json()
             
-            ytd = content[str(datetime.now().year)][activity_json['type']]
+            ytd = content[str(datetime.now().year)][base_activity_type]
             logging.info(ytd)
             
             ## Convert activity verb to a noun
