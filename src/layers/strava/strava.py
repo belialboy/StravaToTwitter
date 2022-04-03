@@ -23,7 +23,7 @@ class Strava:
                "Walk": "walk"
              }
     
-    def __init__(self,auth,stravaClientId: str, stravaClientSecret: str,ddbTableName: str, athleteId = None):
+    def __init__(self,auth,stravaClientId: str, stravaClientSecret: str,ddbTableName: str, athleteId: int = None):
         self.stravaClientId = stravaClientId
         self.stravaClientSecret = stravaClientSecret
         self.ddbTableName = ddbTableName
