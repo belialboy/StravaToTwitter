@@ -14,7 +14,8 @@ PAUSE = 1 #second
 RETRIES = 5
 
 class Strava:
-    
+    STRAVA_API_URL = "https://www.strava.com/api/v3"
+    STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token"
     VERBTONOUN = { "VirtualRun": "virtual run",
                "Run": "run",
                "VirtualRide": "virtual ride",
@@ -33,74 +34,46 @@ class Strava:
         elif isinstance(auth,str):
             self._newAthlete(auth) 
     
-
     def _newAthlete(self,code):
-        data = {
-            'client_id': self.stravaClientId,
-            'client_secret': self.stravaClientSecret,
-            'code': code,
-            'grant_type': "authorization_code"
-        }
-        response = requests.post("https://www.strava.com/oauth/token", json=data)
-        if response.status_code == 200:
-            dynamodb = boto3.resource('dynamodb')
-            table = dynamodb.Table(self.ddbTableName)
-            self.tokens = response.json()
-            self.athleteId = response.json()['athlete']['id']
+        new_tokens = self._getTokensWithCode(code)
+        if new_tokens is not None:
+            
+            self.tokens = new_tokens
+            self.athleteId = new_tokens['athlete']['id']
             logger.info("Checking to see if the athlete is already registered")
-            athelete_record = table.get_item(Key={'Id': self.athleteId})
-            if 'Item' not in athelete_record:
+            athlete_record = self._getAthleteFromDDB()
+            if athlete_record is None:
                 # Get any existing data for runs, rides or swims they may have done, and add these as the starting status for the body element
-                logger.info("Net new athelete. Welcome!")
+                logger.info("Net new athlete. Welcome!")
                 body_as_string="{}"
                 try:
                     current_year = str(datetime.datetime.now().year)
                     data_to_add = {}
-                    athelete_detail_json = self.getAthlete(self.athleteId)
-                    if athelete_detail_json['ytd_ride_totals']['count']>0:
-                        data_to_add['Ride']={"distance":athelete_detail_json['ytd_ride_totals']['distance'],"duration":athelete_detail_json['ytd_ride_totals']['elapsed_time'],"count":athelete_detail_json['ytd_ride_totals']['count']}
-                    if athelete_detail_json['ytd_run_totals']['count']>0:
-                        data_to_add['Run']={"distance":athelete_detail_json['ytd_run_totals']['distance'],"duration":athelete_detail_json['ytd_run_totals']['elapsed_time'],"count":athelete_detail_json['ytd_run_totals']['count']}
-                    if athelete_detail_json['ytd_swim_totals']['count']>0:
-                        data_to_add['Swim']={"distance":athelete_detail_json['ytd_swim_totals']['distance'],"duration":athelete_detail_json['ytd_swim_totals']['elapsed_time'],"count":athelete_detail_json['ytd_swim_totals']['count']}
+                    athlete_detail_json = self.getAthlete(self.athleteId)
+                    if athlete_detail_json['ytd_ride_totals']['count']>0:
+                        data_to_add['Ride']={"distance":athlete_detail_json['ytd_ride_totals']['distance'],"duration":athlete_detail_json['ytd_ride_totals']['elapsed_time'],"count":athlete_detail_json['ytd_ride_totals']['count']}
+                    if athlete_detail_json['ytd_run_totals']['count']>0:
+                        data_to_add['Run']={"distance":athlete_detail_json['ytd_run_totals']['distance'],"duration":athlete_detail_json['ytd_run_totals']['elapsed_time'],"count":athlete_detail_json['ytd_run_totals']['count']}
+                    if athlete_detail_json['ytd_swim_totals']['count']>0:
+                        data_to_add['Swim']={"distance":athlete_detail_json['ytd_swim_totals']['distance'],"duration":athlete_detail_json['ytd_swim_totals']['elapsed_time'],"count":athlete_detail_json['ytd_swim_totals']['count']}
                     if len(data_to_add)>0:
                         body_as_string=json.dumps({current_year:data_to_add})
                 except Exception as e:
                     logger.error("Failed to collect details about the athletes previous activity. Sorry")
                     logger.error(e)
-                table.put_item(
-                    Item={
-                      'Id': self.athleteId,
-                      'body': body_as_string
-                    })
+                self._putAthleteToDB(body_as_string)
             self._writeTokens(self.tokens)
         else:
-            logger.error("Failed to get OAuth tokens")
-            logger.error("{} - {}".format(response.status_code, response.content))
             exit()
         
     def refreshTokens(self):
         if int(time.time()) > int(self.tokens['expires_at']):
             logger.info("Need to refresh Strava Tokens")
-            data = {
-                'client_id': self.stravaClientId,
-                'client_secret': self.stravaClientSecret,
-                'grant_type': "refresh_token",
-                'refresh_token': self.tokens['refresh_token']
-            }
-            
-            response = requests.post("https://www.strava.com/oauth/token", json=data)
-            
-            if response.status_code == 200:
-                
-                logger.info("Got new Strava tokens")
-                
-                self._writeTokens(response.json())
-                
-            else:
-                logger.error("Failed to get refreshed tokens")
-                logger.error(response.raw)
-                exit()
+
+            new_tokens = self._getTokensWithRefresh()
+            logger.info("Got new Strava tokens")
+            self._writeTokens(new_tokens)
+
                 
     def _writeTokens(self,tokens):
         logger.info("Writing strava tokens to DDB")
@@ -118,7 +91,57 @@ class Strava:
                 ':c': json.dumps(self.tokens)
             }
         )
+    
+    def _getAthleteFromDDB(self):
+        logger.info("Getting athlete from DDB")
+        dynamodb = boto3.resource('dynamodb')
+        table = dynamodb.Table(self.ddbTableName)
+        athlete_record = table.get_item(Key={'Id': self.athleteId})
+        if "Item" in athlete_record:
+            return athlete_record['Item']
+        logger.info("No athlete found")
+        return None
+    
+    def _putAthleteToDB(self,body_as_string="{}"):
+        logger.info("Writing basic athlete to DDB")
+        dynamodb = boto3.resource('dynamodb')
+        table = dynamodb.Table(self.ddbTableName)
+        table.put_item(
+            Item={
+              'Id': self.athleteId,
+              'body': body_as_string
+            })
+    
+    def _getTokensWithCode(self,code):
+        data = {
+            'client_id': self.stravaClientId,
+            'client_secret': self.stravaClientSecret,
+            'code': code,
+            'grant_type': "authorization_code"
+        }
+        response = requests.post(self.STRAVA_TOKEN_URL, json=data)
+        if response.status_code == 200:
+            return response.json()
+        logger.error("Failed to get OAuth tokens")
+        logger.error("{} - {}".format(response.status_code, response.content))
+        return None
         
+    def _getTokensWithRefresh(self):
+        data = {
+            'client_id': self.stravaClientId,
+            'client_secret': self.stravaClientSecret,
+            'grant_type': "refresh_token",
+            'refresh_token': self.tokens['refresh_token']
+        }
+        
+        response = requests.post(self.STRAVA_TOKEN_URL, json=data)
+        if response.status_code == 200:
+            return response.json()
+        logger.error("Failed to get refreshed tokens")
+        logger.error(response.raw)
+        exit()
+        return None
+    
     def makeTwitterString(self,athlete_stats: dict,latest_event: dict):
         
         ytd = athlete_stats[str(datetime.datetime.now().year)][latest_event['type']]
@@ -179,14 +202,14 @@ class Strava:
                 exit()
                 
     def getActivity(self,activityId):
-        endpoint = "https://www.strava.com/api/v3/activities/{ID}".format(ID=activityId)
+        endpoint = "{STRAVA}/activities/{ID}".format(STRAVA=self.STRAVA_API_URL,ID=activityId)
         return(self._get(endpoint))
         
     def getCurrentAthlete(self):
-        endpoint = "https://www.strava.com/api/v3/athlete"
+        endpoint = "{STRAVA}/athlete".format(STRAVA=self.STRAVA_API_URL)
         return(self._get(endpoint))
         
     def getAthlete(self,athleteId):
-        endpoint = "https://www.strava.com/api/v3/athletes/{ID}/stats".format(ID=athleteId)
+        endpoint = "{STRAVA}/athletes/{ID}/stats".format(STRAVA=self.STRAVA_API_URL,ID=athleteId)
         return(self._get(endpoint))
         
