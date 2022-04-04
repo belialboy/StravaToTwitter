@@ -28,28 +28,21 @@ def lambda_handler(event, context):
         logger.error("This request does not have the subscription_id equal to the expected value.")
         return
     
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table(os.environ["totalsTable"])
+    strava = Strava(
+        athleteId=event['owner_id'],
+        stravaClientId=os.environ['stravaClientId'], 
+        stravaClientSecret=os.environ['stravaClientSecret'],
+        ddbTableName=os.environ["totalsTable"]
+        )
     
-    athlete_record = table.get_item(Key={'Id': str(event['owner_id'])})
+    athlete_record = strava._getAthleteFromDDB()
     
     logger.info("Checking for race condition")
-    if "last_activity_id" in athlete_record['Item'] and event['object_id'] == athlete_record['Item']['last_activity_id']:
+    if "last_activity_id" in athlete_record and event['object_id'] == athlete_record['last_activity_id']:
         logger.info("Bailing as this is a duplicate")
         exit()
     else:
-        table.update_item(
-            Key={
-                'Id': str(event['owner_id'])
-            },
-            UpdateExpression="set last_activity_id=:c",
-            ExpressionAttributeValues={
-                ':c': event['object_id']
-            }
-        )
-    
-    # check tokens still valid
-    strava = Strava(json.loads(athlete_record['Item']['tokens']), event['owner_id'],os.environ['stravaClientId'], os.environ['stravaClientSecret'],os.environ["totalsTable"])
+        strava.updateLastActivity(event['object_id'])
     
     # get the activity details
     activity = strava.getActivity(event['object_id'])
@@ -60,55 +53,42 @@ def lambda_handler(event, context):
         content = updateContent({},activity['type'],activity['distance'],activity['elapsed_time'])
     else:
         content = updateContent(json.loads(athlete_record['Item']['body']),activity['type'],activity['distance'],activity['elapsed_time'])
-    table.update_item(
-        Key={
-            'Id': str(event['owner_id'])
-        },
-        UpdateExpression="set body=:c",
-        ExpressionAttributeValues={
-            ':c': json.dumps(content)
-        }
-    )
+    
+    strava._updateAthleteOnDB(json.dumps(content))
+    
     logger.info(content)
 
-    if "twitter" in athlete_record['Item']:
-        twitter_creds = json.loads(athlete_record['Item']['twitter'])
-        twitter = Twython(twitter_creds["twitterConsumerKey"], 
-            twitter_creds["twitterConsumerSecret"],
-            twitter_creds["twitterAccessTokenKey"], 
-            twitter_creds["twitterAccessTokenSecret"])
+    twitter = getTwitterClient()
+    if twitter is  None:
+        exit()
+    status = strava.makeTwitterString(athlete_stats=content,latest_event=activity)
 
-        status = strava.makeTwitterString(athlete_stats=content,latest_event=activity)
-
-        if ("photos" in activity and 
-            "primary" in activity['photos'] and 
-            activity['photos']['primary'] is not None and 
-            "urls" in activity['photos']['primary'] and 
-            "600" in activity['photos']['primary']['urls']):
-                
-                image = requests.get(activity['photos']['primary']['urls']['600'])
-                if image.status_code == 200:
-                    try:
-                        twitterImage = twitter.upload_media(media=image.content)
-                    except Exception as e:
-                        logger.error("Failed to upload media from {} to twitter".format(activity['photos']['primary']['urls']['600']))
-                        logger.error(e)
-                        if not debug:
-                            twitter.update_status(status=status)
-                    else:
-                        if not debug:
-                          twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
+    if ("photos" in activity and 
+        "primary" in activity['photos'] and 
+        activity['photos']['primary'] is not None and 
+        "urls" in activity['photos']['primary'] and 
+        "600" in activity['photos']['primary']['urls']):
+            
+            image = requests.get(activity['photos']['primary']['urls']['600'])
+            if image.status_code == 200:
+                try:
+                    twitterImage = twitter.upload_media(media=image.content)
+                except Exception as e:
+                    logger.error("Failed to upload media from {} to twitter".format(activity['photos']['primary']['urls']['600']))
+                    logger.error(e)
+                    if not debug:
+                        twitter.update_status(status=status)
                 else:
-                  if not debug:
-                    twitter.update_status(status=status)
-        else:
-          if not debug:
-            twitter.update_status(status=status)
-
-        logging.info(status)
+                    if not debug:
+                      twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
+            else:
+              if not debug:
+                twitter.update_status(status=status)
     else:
-        logger.info("No twitter credentials found so passing on updating status")
+      if not debug:
+        twitter.update_status(status=status)
 
+    logging.info(status)
 
     logging.info("Profit!")
 
@@ -142,3 +122,24 @@ def updateContent(content, activityType, distance, duration):
         }
     return content
     
+def getTwitterClient():
+    if "TwitterSSMPrefix" in os.environ:
+        ssm = boto3.client("ssm")
+        credentials={}
+        credentials['twitterConsumerKey'] = ssm.get_parameter(Name="{}twitterConsumerKey".format(os.environ['TwitterSSMPrefix']))
+        credentials['twitterConsumerSecret'] = ssm.get_parameter(Name="{}twitterConsumerSecret".format(os.environ['TwitterSSMPrefix']))
+        credentials['twitterAccessTokenKey'] = ssm.get_parameter(Name="{}twitterAccessTokenKey".format(os.environ['TwitterSSMPrefix']))
+        credentials['twitterAccessTokenSecret'] = ssm.get_parameter(Name="{}twitterAccessTokenSecret".format(os.environ['TwitterSSMPrefix']))
+        client = Twython(credentials["twitterConsumerKey"], 
+            credentials["twitterConsumerSecret"],
+            credentials["twitterAccessTokenKey"], 
+            credentials["twitterAccessTokenSecret"])
+        return client
+    elif "twitterConsumerKey" in os.environ:
+        client = Twython(os.environ["twitterConsumerKey"], 
+            os.environ["twitterConsumerSecret"],
+            os.environ["twitterAccessTokenKey"], 
+            os.environ["twitterAccessTokenSecret"])
+        return client
+    else:
+        print("No twitter credentials found, so passing")

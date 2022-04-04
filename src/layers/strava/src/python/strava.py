@@ -24,15 +24,15 @@ class Strava:
                "Walk": "walk"
              }
     
-    def __init__(self,auth,stravaClientId: str, stravaClientSecret: str,ddbTableName: str, athleteId: int = None):
+    def __init__(self,stravaClientId: str, stravaClientSecret: str,ddbTableName: str, athleteId: int = None, auth:str = None):
         self.stravaClientId = stravaClientId
         self.stravaClientSecret = stravaClientSecret
         self.ddbTableName = ddbTableName
-        if isinstance(auth,dict):
+        if auth is not None:
+            self._newAthlete(auth)
+        elif athleteId is not None:
             self.athleteId = athleteId
-            self.tokens = auth
-        elif isinstance(auth,str):
-            self._newAthlete(auth) 
+            self.tokens = self._getAthleteFromDDB()['tokens']
     
     def _newAthlete(self,code):
         new_tokens = self._getTokensWithCode(code)
@@ -77,8 +77,8 @@ class Strava:
                 
     def _writeTokens(self,tokens):
         logger.info("Writing strava tokens to DDB")
-        dynamodb = boto3.resource('dynamodb')
-        table = dynamodb.Table(self.ddbTableName)
+
+        table = self._getDDBTable()
         
         self.tokens = {"expires_at":tokens['expires_at'],"access_token":tokens['access_token'],"refresh_token":tokens['refresh_token']}
 
@@ -94,9 +94,8 @@ class Strava:
     
     def _getAthleteFromDDB(self):
         logger.info("Getting athlete from DDB")
-        dynamodb = boto3.resource('dynamodb')
-        table = dynamodb.Table(self.ddbTableName)
-        athlete_record = table.get_item(Key={'Id': self.athleteId})
+        table = self._getDDBTable()
+        athlete_record = table.get_item(Key={'Id': str(self.athleteId)})
         if "Item" in athlete_record:
             return athlete_record['Item']
         logger.info("No athlete found")
@@ -104,13 +103,38 @@ class Strava:
     
     def _putAthleteToDB(self,body_as_string="{}"):
         logger.info("Writing basic athlete to DDB")
-        dynamodb = boto3.resource('dynamodb')
-        table = dynamodb.Table(self.ddbTableName)
+        table = self._getDDBTable()
         table.put_item(
             Item={
-              'Id': self.athleteId,
+              'Id': str(self.athleteId),
               'body': body_as_string
             })
+            
+    def _updateAthleteOnDB(self,body_as_string: str):
+        logger.info("Updating athlete on DDB")
+        table = self._getDDBTable()
+        table.update_item(
+        Key={
+                'Id': str(self.athleteId)
+            },
+            UpdateExpression="set body=:c",
+            ExpressionAttributeValues={
+                ':c': body_as_string
+            }
+        )
+    
+    def updateLastActivity(self, activityId):
+        logger.info("Updating athlete on DDB")
+        table = self._getDDBTable()
+        table.update_item(
+            Key={
+                'Id': str(self.athleteId)
+            },
+            UpdateExpression="set last_activity_id=:c",
+            ExpressionAttributeValues={
+                ':c': activityId
+            }
+        )
     
     def _getTokensWithCode(self,code):
         data = {
@@ -141,6 +165,14 @@ class Strava:
         logger.error(response.raw)
         exit()
         return None
+    
+    def _getDDBTable(self):
+        try:
+            return self.ddbTable
+        except AttributeError:
+            self.dynamodb = boto3.resource('dynamodb')
+            self.ddbTable = self.dynamodb.Table(self.ddbTableName)
+            return self.ddbTable
     
     def makeTwitterString(self,athlete_stats: dict,latest_event: dict):
         

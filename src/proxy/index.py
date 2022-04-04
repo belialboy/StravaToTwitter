@@ -55,19 +55,6 @@ def lambda_handler(event, context):
         if "queryStringParameters" in event and "code" in event['queryStringParameters']:
             try:
                 strava = Strava(auth=event['queryStringParameters']['code'],stravaClientId=os.environ['stravaClientId'],stravaClientSecret=os.environ['stravaClientSecret'],ddbTableName=os.environ["totalsTable"])
-                dynamodb = boto3.resource('dynamodb')
-                table = dynamodb.Table(os.environ["totalsTable"])
-                table.update_item(
-                    Key={'Id': str(strava.athleteId)},
-                    UpdateExpression="set twitter=:c",
-                    ExpressionAttributeValues={
-                        ':c': json.dumps({
-                              "twitterConsumerKey": os.environ["twitterConsumerKey"], 
-                              "twitterConsumerSecret": os.environ["twitterConsumerSecret"],
-                              "twitterAccessTokenKey": os.environ["twitterAccessTokenKey"], 
-                              "twitterAccessTokenSecret": os.environ["twitterAccessTokenSecret"]})
-                    }
-                )            
             
                 returnable = {
                     "statusCode": 200,

@@ -54,10 +54,6 @@ Resources:
       - !Ref StravaLayer
       Environment:
         Variables:
-          twitterConsumerKey: !Ref pTwitterConsumerKey
-          twitterConsumerSecret: !Ref pTwitterConsumerSecret
-          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
-          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
           stravaClientId: !Ref pStravaClientId
           stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
@@ -94,6 +90,10 @@ Resources:
       - !Ref StravaLayer
       Environment:
         Variables:
+          twitterConsumerKey: !Ref pTwitterConsumerKey
+          twitterConsumerSecret: !Ref pTwitterConsumerSecret
+          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
+          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
           stravaClientId: !Ref pStravaClientId
           stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
