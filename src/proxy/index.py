@@ -24,7 +24,7 @@ def lambda_handler(event, context):
         },
         "body": "PassThru"
     }
-
+        
     if "/register/" in event['rawPath']:
         # do the register path
         logger.info("register path")

@@ -36,7 +36,7 @@ Resources:
   StravaLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      ContentUri: src/layers/strava/
+      ContentUri: src/layers/strava/src
       CompatibleRuntimes:
         - python3.7
 

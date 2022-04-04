@@ -1,6 +1,6 @@
 import unittest
 
-from src.layers.strava.strava import Strava
+from src.layers.strava.src.python.strava import Strava
 from unittest import mock
 
 class TestStrava(unittest.TestCase):
