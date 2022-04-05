@@ -16,7 +16,7 @@ phases:
     runtime-versions:
       python: 3.7
     commands:
-      - pip install -r layers/strava/requirements.txt
+      - pip install -r src/layers/strava/src/python/requirements.txt
   pre_build:
     on-failure: ABORT
     commands:
