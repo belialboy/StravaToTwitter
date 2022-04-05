@@ -63,35 +63,39 @@ def lambda_handler(event, context):
     if twitter is  None:
         exit()
     status = strava.makeTwitterString(athlete_stats=content,latest_event=activity)
-
-    if ("photos" in activity and 
-        "primary" in activity['photos'] and 
-        activity['photos']['primary'] is not None and 
-        "urls" in activity['photos']['primary'] and 
-        "600" in activity['photos']['primary']['urls']):
-            
-            image = requests.get(activity['photos']['primary']['urls']['600'])
-            if image.status_code == 200:
-                try:
-                    photo = BytesIO(image.content)
-                    twitterImage = twitter.upload_media(media=photo)
-                except Exception as e:
-                    logger.error("Failed to upload media from {} to twitter".format(activity['photos']['primary']['urls']['600']))
-                    logger.error(e)
-                    logger.error("Bailing on trying to use media, and now just tweeting the status without media")
-                    if not debug:
-                        twitter.update_status(status=status)
+    
+    if status is not None:
+        logging.info("Tweet status locked and loaded...")
+        logging.info(status)
+        if ("photos" in activity and 
+            "primary" in activity['photos'] and 
+            activity['photos']['primary'] is not None and 
+            "urls" in activity['photos']['primary'] and 
+            "600" in activity['photos']['primary']['urls']):
+                
+                image = requests.get(activity['photos']['primary']['urls']['600'])
+                if image.status_code == 200:
+                    try:
+                        photo = BytesIO(image.content)
+                        twitterImage = twitter.upload_media(media=photo)
+                    except Exception as e:
+                        logger.error("Failed to upload media from {} to twitter".format(activity['photos']['primary']['urls']['600']))
+                        logger.error(e)
+                        logger.error("Bailing on trying to use media, and now just tweeting the status without media")
+                        if not debug:
+                            twitter.update_status(status=status)
+                    else:
+                        if not debug:
+                          twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
                 else:
-                    if not debug:
-                      twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
-            else:
-              if not debug:
-                twitter.update_status(status=status)
+                  if not debug:
+                    twitter.update_status(status=status)
+        else:
+          if not debug:
+            twitter.update_status(status=status)
+        logging.info("Tweet published")
     else:
-      if not debug:
-        twitter.update_status(status=status)
-
-    logging.info(status)
+        logging.info("Not tweeting this time... nothing special!")
 
     logging.info("Profit!")
 

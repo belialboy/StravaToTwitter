@@ -114,7 +114,7 @@ class Strava:
             })
             
     def _updateAthleteOnDB(self,body_as_string: str):
-        logger.info("Updating athlete on DDB")
+        logger.info("Updating athlete body on DDB")
         table = self._getDDBTable()
         table.update_item(
         Key={
@@ -127,7 +127,7 @@ class Strava:
         )
     
     def updateLastActivity(self, activityId):
-        logger.info("Updating athlete on DDB")
+        logger.info("Updating athlete last activity on DDB")
         table = self._getDDBTable()
         table.update_item(
             Key={
@@ -178,8 +178,8 @@ class Strava:
             return self.ddbTable
     
     def makeTwitterString(self,athlete_stats: dict,latest_event: dict):
-        
-        ytd = athlete_stats[str(datetime.datetime.now().year)][latest_event['type']]
+        year = str(datetime.datetime.now().year)
+        ytd = athlete_stats[year][latest_event['type']]
         
         ## Convert activity verb to a noun
         activity_type = latest_event['type']
@@ -187,7 +187,35 @@ class Strava:
             activity_type =  self.VERBTONOUN[activity_type]
         strava_athlete = self.getCurrentAthlete()
         
-        status = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
+        duration_sum =0
+        distance_sum =0
+        count_sum=0
+        for activity in athlete_stats[year]:
+            duration_sum+=activity_type['duration']
+            distance_sum+=activity_type['distance']
+            count_sum+=activity_type['count']
+        
+        status_template = None
+        if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEKM:0.2f}km #KiloWhat"
+        elif math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles #MilesAndMiles"
+        elif math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['duration'])/86400):
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
+        elif ytd['count'] == 1 or ytd['count']%10 == 0:
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
+        elif math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEKM:0.2f}km #SelfPropelledKilos"
+        elif math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}km #SelfPropelledMiles"
+        elif math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['duration'])/86400):
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDURATION} #SaddleSoreDays"
+        elif count_sum%100 ==0:
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nThat's {ALLACTIVITYCOUNT} total activities this year. #ActiveAllTheTime"
+            
+        if status_template is None:
+            return None
+        status = status_template.format(
             FIRSTNAME=strava_athlete['firstname'],
             LASTNAME=strava_athlete['lastname'],
             TYPE=activity_type,
@@ -198,7 +226,12 @@ class Strava:
             TOTALDISTANCEKM=ytd['distance']/1000,
             TOTALDURATION=self.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
-            ACTIVITYURL="https://www.strava.com/activities/{}".format(latest_event['id']))
+            ACTIVITYURL="https://www.strava.com/activities/{}".format(latest_event['id']),
+            ALLACTIVITYDURATION=self.secsToStr(duration_sum),
+            ALLACTIVITYDISTANCEKM=distance_sum/1000,
+            ALLACTIVITYDISTANCEMILES=distance_sum/1609,
+            ALLACTIVITYCOUNT=count_sum
+            )
         if "device_name" in latest_event:
             if latest_event['device_name'] == 'Zwift':
                 status += " #RideOn #Zwift"
