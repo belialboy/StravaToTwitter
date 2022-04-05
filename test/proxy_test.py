@@ -6,6 +6,7 @@ from unittest import mock
 
 class TestProxy(unittest.TestCase):
     
+    @unittest.skip('Not ready yet')
     def test_register_redirect(self):
         stream = os.popen('sam local invoke ProxyLambdaFunction -e test/payloads/register_test.json 2> /dev/null')
         output = stream.read()
