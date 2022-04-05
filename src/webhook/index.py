@@ -10,6 +10,7 @@ import boto3
 import logging
 import hashlib
 import math
+from io import BytesIO
 from botocore.exceptions import ClientError
 from strava import Strava
 
@@ -72,10 +73,12 @@ def lambda_handler(event, context):
             image = requests.get(activity['photos']['primary']['urls']['600'])
             if image.status_code == 200:
                 try:
-                    twitterImage = twitter.upload_media(media=image.content)
+                    photo = BytesIO(image.content)
+                    twitterImage = twitter.upload_media(media=photo)
                 except Exception as e:
                     logger.error("Failed to upload media from {} to twitter".format(activity['photos']['primary']['urls']['600']))
                     logger.error(e)
+                    logger.error("Bailing on trying to use media, and now just tweeting the status without media")
                     if not debug:
                         twitter.update_status(status=status)
                 else:
