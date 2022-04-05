@@ -216,30 +216,30 @@ class Strava:
     def _get(self,endpoint):
         while True:
             counter = 0
-            try:
-                logger.debug("Checking if tokens need a refresh")
-                self.refreshTokens()
-                logger.debug("Sending GET request to strava endpoint")
-                logger.debug(self.tokens['access_token'])
-                activity = requests.get(
-                    endpoint,
-                    headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=self.tokens['access_token'])}
-                    )
-                if activity.status_code == 200:
-                    logger.debug("All good. Returning.")
-                    return activity.json()
-                elif counter == RETRIES:
-                    logger.error("Get failed even after retries")
-                    logger.error("{} - {}".format(activity.status_code,activity.content))
-                    exit()
-                else:
-                    logger.debug("Failed, but going to retry.")
-                    counter+=1
-                    time.sleep(PAUSE)
-            except Exception as e:
-                logger.error("An Exception occured while getting {} ".format(endpoint))
-                logger.error(e)
+            #try:
+            logger.debug("Checking if tokens need a refresh")
+            self.refreshTokens()
+            logger.debug("Sending GET request to strava endpoint")
+            logger.debug(self.tokens['access_token'])
+            activity = requests.get(
+                endpoint,
+                headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=self.tokens['access_token'])}
+                )
+            if activity.status_code == 200:
+                logger.debug("All good. Returning.")
+                return activity.json()
+            elif counter == RETRIES:
+                logger.error("Get failed even after retries")
+                logger.error("{} - {}".format(activity.status_code,activity.content))
                 exit()
+            else:
+                logger.debug("Failed, but going to retry.")
+                counter+=1
+                time.sleep(PAUSE)
+            #except Exception as e:
+            #    logger.error("An Exception occured while getting {} ".format(endpoint))
+            #    logger.error(e)
+            #   exit()
                 
     def getActivity(self,activityId):
         endpoint = "{STRAVA}/activities/{ID}".format(STRAVA=self.STRAVA_API_URL,ID=activityId)
