@@ -49,10 +49,10 @@ def lambda_handler(event, context):
    
     activity['type'] = activity['type'].replace("Virtual","")
     
-    if "body" not in athlete_record['Item']:
+    if "body" not in athlete_record:
         content = updateContent({},activity['type'],activity['distance'],activity['elapsed_time'])
     else:
-        content = updateContent(json.loads(athlete_record['Item']['body']),activity['type'],activity['distance'],activity['elapsed_time'])
+        content = updateContent(json.loads(athlete_record['body']),activity['type'],activity['distance'],activity['elapsed_time'])
     
     strava._updateAthleteOnDB(json.dumps(content))
     
