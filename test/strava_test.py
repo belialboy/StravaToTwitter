@@ -1,4 +1,5 @@
 import unittest
+import json
 
 from src.layers.strava.src.python.strava import Strava
 from unittest import mock
@@ -8,7 +9,7 @@ class TestStrava(unittest.TestCase):
   def test_normal_constructor(self):
     with mock.patch.object(Strava, '_getAthleteFromDDB') as mock_method:
       tokens={"expires_at":1234567890,"access_token":"abcdef1234567890","refresh_token":"0987654321fedcba"}
-      mock_method.return_value = {"tokens": tokens}
+      mock_method.return_value = {"tokens": json.dumps(tokens)}
       strava=Strava(stravaClientId="DEADBEEF", stravaClientSecret="FEEDBEEF",ddbTableName="Dynamo", athleteId = 1234567)
       self.assertEqual(strava.tokens["expires_at"],tokens['expires_at'])
       self.assertEqual(strava.stravaClientId,"DEADBEEF")
@@ -27,7 +28,7 @@ class TestStrava(unittest.TestCase):
   def test_secsToStr(self):
     with mock.patch.object(Strava, '_getAthleteFromDDB') as mock_method:
       tokens={"expires_at":1234567890,"access_token":"abcdef1234567890","refresh_token":"0987654321fedcba"}
-      mock_method.return_value = {"tokens": tokens}
+      mock_method.return_value = {"tokens": json.dumps(tokens)}
       strava=Strava(stravaClientId="DEADBEEF", stravaClientSecret="FEEDBEEF",ddbTableName="Dynamo", athleteId = 1234567)
       self.assertEqual(strava.secsToStr(1),"00 minutes and 01 seconds")
       self.assertEqual(strava.secsToStr(60),"01 minutes and 00 seconds")
