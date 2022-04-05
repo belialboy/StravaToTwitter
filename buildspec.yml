@@ -15,16 +15,20 @@ phases:
   install:
     runtime-versions:
       python: 3.7
-  build:
     commands:
-      - echo Build started on `date`
-      - echo Entered the build phase ...
+      - pip install -r src/layers/strava/src/python/requirements.txt
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - python -m unittest discover -s test -p '*_test.py'
+  build:
+    on-failure: ABORT
+    commands:
       # Package SAM template
       - sam build
-      # Deploy packaged SAM template
-      - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
-      # Find out what the callback URL is from the stack
   post_build:
     commands:
+      - echo "Deploy"
+      - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
       # Send a Pushbullet notification about the update to the stack
       - curl --silent -u """$pPushBullet"":" -d type="note" -d body="Updated $stackName" -d title="AWS Codebuild" 'https://api.pushbullet.com/v2/pushes'

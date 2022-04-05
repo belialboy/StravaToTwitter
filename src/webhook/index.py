@@ -11,19 +11,12 @@ import logging
 import hashlib
 import math
 from botocore.exceptions import ClientError
+from strava import Strava
 
 debug = False
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-VERBTONOUN = { "VirtualRun": "virtual run",
-               "Run": "run",
-               "VirtualRide": "virtual ride",
-               "Ride": "ride",
-               "Rowing": "row",
-               "Walk": "walk"
-             }
 
 def lambda_handler(event, context):
 
@@ -35,150 +28,67 @@ def lambda_handler(event, context):
         logger.error("This request does not have the subscription_id equal to the expected value.")
         return
     
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table(os.environ["totalsTable"])
+    strava = Strava(
+        athleteId=event['owner_id'],
+        stravaClientId=os.environ['stravaClientId'], 
+        stravaClientSecret=os.environ['stravaClientSecret'],
+        ddbTableName=os.environ["totalsTable"]
+        )
     
-    athelete_record = table.get_item(Key={'Id': str(event['owner_id'])})
+    athlete_record = strava._getAthleteFromDDB()
+    
     logger.info("Checking for race condition")
-    if "last_activity_id" in athelete_record['Item'] and event['object_id'] == athelete_record['Item']['last_activity_id']:
+    if "last_activity_id" in athlete_record and event['object_id'] == athlete_record['last_activity_id']:
         logger.info("Bailing as this is a duplicate")
         exit()
     else:
-        table.update_item(
-            Key={
-                'Id': str(event['owner_id'])
-            },
-            UpdateExpression="set last_activity_id=:c",
-            ExpressionAttributeValues={
-                ':c': event['object_id']
-            }
-        )
-        
-    # check tokens still valid
-    tokens = json.loads(athelete_record['Item']['tokens'])
-    if int(time.time()) > int(tokens['expires_at']):
-        logger.info("Need to refresh Strava Tokens")
-        data = {
-            'client_id': os.environ['stravaClientId'],
-            'client_secret': os.environ['stravaClientSecret'],
-            'grant_type': "refresh_token",
-            'refresh_token': tokens['refresh_token']
-        }
-        response = requests.post("https://www.strava.com/oauth/token", json=data)
-        if response.status_code == 200:
-            logger.info("Got new tokens")
-            tokens = {"expires_at":response.json()['expires_at'],"access_token":response.json()['access_token'],"refresh_token":response.json()['refresh_token']}
-
-            table.update_item(
-                Key={
-                    'Id': str(event['owner_id'])
-                },
-                UpdateExpression="set tokens=:c",
-                ExpressionAttributeValues={
-                    ':c': json.dumps(tokens)
-                }
-            )
-        else:
-            logger.error("Failed to get refreshed tokens")
-            logger.error(response.raw)
-            exit()
+        strava.updateLastActivity(event['object_id'])
     
     # get the activity details
-    activity = requests.get(
-        "https://www.strava.com/api/v3/activities/{ID}".format(ID=event['object_id']),
-        headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=tokens['access_token'])}
-        )
+    activity = strava.getActivity(event['object_id'])
+   
+    activity['type'] = activity['type'].replace("Virtual","")
     
-    if activity.status_code == 200:
-        # read the activity and publish to twitter
-        logger.info("Got the activity")
-        logger.info(activity.json())
-        activity_json = activity.json()
-        base_activity_type = activity_json['type'].replace("Virtual","")
-        
-        if "body" not in athelete_record['Item']:
-            content = {str(datetime.now().year):{base_activity_type:{"distance":activity_json['distance'],"duration":activity_json['elapsed_time'],"count":1}}}
-        else:
-            content = updateContent(json.loads(athelete_record['Item']['body']),base_activity_type,activity_json['distance'],activity_json['elapsed_time'])
-        table.update_item(
-            Key={
-                'Id': str(event['owner_id'])
-            },
-            UpdateExpression="set body=:c",
-            ExpressionAttributeValues={
-                ':c': json.dumps(content)
-            }
-        )
-        logger.info(content)
+    if "body" not in athlete_record['Item']:
+        content = updateContent({},activity['type'],activity['distance'],activity['elapsed_time'])
+    else:
+        content = updateContent(json.loads(athlete_record['Item']['body']),activity['type'],activity['distance'],activity['elapsed_time'])
+    
+    strava._updateAthleteOnDB(json.dumps(content))
+    
+    logger.info(content)
 
-        if "twitter" in athelete_record['Item']:
-            twitter_creds = json.loads(athelete_record['Item']['twitter'])
-            twitter = Twython(twitter_creds["twitterConsumerKey"], 
-                twitter_creds["twitterConsumerSecret"],
-                twitter_creds["twitterAccessTokenKey"], 
-                twitter_creds["twitterAccessTokenSecret"])
+    twitter = getTwitterClient()
+    if twitter is  None:
+        exit()
+    status = strava.makeTwitterString(athlete_stats=content,latest_event=activity)
 
-            strava_athlete = requests.get(
-                "https://www.strava.com/api/v3/athlete",
-                headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=tokens['access_token'])}
-                ).json()
+    if ("photos" in activity and 
+        "primary" in activity['photos'] and 
+        activity['photos']['primary'] is not None and 
+        "urls" in activity['photos']['primary'] and 
+        "600" in activity['photos']['primary']['urls']):
             
-            ytd = content[str(datetime.now().year)][base_activity_type]
-            logging.info(ytd)
-            
-            ## Convert activity verb to a noun
-            activity_type = base_activity_type
-            if base_activity_type in VERBTONOUN:
-                activity_type =  VERBTONOUN[base_activity_type]
-                
-            status = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION}".format(
-                FIRSTNAME=strava_athlete['firstname'],
-                LASTNAME=strava_athlete['lastname'],
-                TYPE=activity_type,
-                DISTANCEMILES=activity_json['distance']/1609,
-                DISTANCEKM=activity_json['distance']/1000,
-                DURATION=secsToStr(activity_json['elapsed_time']),
-                TOTALDISTANCEMILES=ytd['distance']/1609,
-                TOTALDISTANCEKM=ytd['distance']/1000,
-                TOTALDURATION=secsToStr(ytd['duration']),
-                TOTALCOUNT=ytd['count'],
-                ACTIVITYURL="https://www.strava.com/activities/{}".format(activity_json['id']))
-            if "device_name" in activity_json:
-                if activity_json['device_name'] == 'Zwift':
-                    status += " @GoZwift"
-
-            if ("photos" in activity_json and 
-                "primary" in activity_json['photos'] and 
-                activity_json['photos']['primary'] is not None and 
-                "urls" in activity_json['photos']['primary'] and 
-                "600" in activity_json['photos']['primary']['urls']):
-                    
-                    image = requests.get(activity_json['photos']['primary']['urls']['600'])
-                    if image.status_code == 200:
-                        try:
-                            twitterImage = twitter.upload_media(media=image.content)
-                        except Exception as e:
-                            logger.error("Failed to upload media from {} to twitter".format(activity_json['photos']['primary']['urls']['600']))
-                            logger.error(e)
-                            if not debug:
-                                twitter.update_status(status=status)
-                        else:
-                            if not debug:
-                              twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
-                    else:
-                      if not debug:
+            image = requests.get(activity['photos']['primary']['urls']['600'])
+            if image.status_code == 200:
+                try:
+                    twitterImage = twitter.upload_media(media=image.content)
+                except Exception as e:
+                    logger.error("Failed to upload media from {} to twitter".format(activity['photos']['primary']['urls']['600']))
+                    logger.error(e)
+                    if not debug:
                         twitter.update_status(status=status)
+                else:
+                    if not debug:
+                      twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
             else:
               if not debug:
                 twitter.update_status(status=status)
-
-            logging.info(status)
-        else:
-            logger.info("No twitter credentials found so passing on updating status")
     else:
-        logger.error("Failed to get the activity")
-        logger.error(response.raw)
-        exit()
+      if not debug:
+        twitter.update_status(status=status)
+
+    logging.info(status)
 
     logging.info("Profit!")
 
@@ -212,10 +122,24 @@ def updateContent(content, activityType, distance, duration):
         }
     return content
     
-def secsToStr(seconds):
-    if seconds > 86400:
-        return "{} day(s) {}".format(math.floor(seconds/86400),time.strftime("%Hh %Mm %Ss", time.gmtime(seconds)))
-    elif seconds > 3600:
-        return time.strftime("%Hhr %Mmins %Sseconds", time.gmtime(seconds))
+def getTwitterClient():
+    if "TwitterSSMPrefix" in os.environ:
+        ssm = boto3.client("ssm")
+        credentials={}
+        credentials['twitterConsumerKey'] = ssm.get_parameter(Name="{}twitterConsumerKey".format(os.environ['TwitterSSMPrefix']))
+        credentials['twitterConsumerSecret'] = ssm.get_parameter(Name="{}twitterConsumerSecret".format(os.environ['TwitterSSMPrefix']))
+        credentials['twitterAccessTokenKey'] = ssm.get_parameter(Name="{}twitterAccessTokenKey".format(os.environ['TwitterSSMPrefix']))
+        credentials['twitterAccessTokenSecret'] = ssm.get_parameter(Name="{}twitterAccessTokenSecret".format(os.environ['TwitterSSMPrefix']))
+        client = Twython(credentials["twitterConsumerKey"], 
+            credentials["twitterConsumerSecret"],
+            credentials["twitterAccessTokenKey"], 
+            credentials["twitterAccessTokenSecret"])
+        return client
+    elif "twitterConsumerKey" in os.environ:
+        client = Twython(os.environ["twitterConsumerKey"], 
+            os.environ["twitterConsumerSecret"],
+            os.environ["twitterAccessTokenKey"], 
+            os.environ["twitterAccessTokenSecret"])
+        return client
     else:
-        return time.strftime("%M minutes and %S seconds", time.gmtime(seconds))
+        print("No twitter credentials found, so passing")

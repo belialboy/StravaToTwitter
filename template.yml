@@ -33,6 +33,13 @@ Parameters:
 
 Resources:
 
+  StravaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: src/layers/strava/src
+      CompatibleRuntimes:
+        - python3.7
+
   ProxyLambdaFunction:
     DependsOn: 
     - Totals
@@ -43,12 +50,10 @@ Resources:
       Timeout: 60
       Handler: index.lambda_handler
       CodeUri: src/proxy/
+      Layers:
+      - !Ref StravaLayer
       Environment:
         Variables:
-          twitterConsumerKey: !Ref pTwitterConsumerKey
-          twitterConsumerSecret: !Ref pTwitterConsumerSecret
-          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
-          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
           stravaClientId: !Ref pStravaClientId
           stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
@@ -81,8 +86,14 @@ Resources:
       Timeout: 60
       Handler: index.lambda_handler
       CodeUri: src/webhook/
+      Layers:
+      - !Ref StravaLayer
       Environment:
         Variables:
+          twitterConsumerKey: !Ref pTwitterConsumerKey
+          twitterConsumerSecret: !Ref pTwitterConsumerSecret
+          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
+          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
           stravaClientId: !Ref pStravaClientId
           stravaClientSecret: !Ref pStravaClientSecret
           totalsTable: !Ref Totals
