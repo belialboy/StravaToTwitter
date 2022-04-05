@@ -8,7 +8,7 @@ import math
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 PAUSE = 1 #second
 RETRIES = 5
@@ -67,11 +67,13 @@ class Strava:
             exit()
         
     def refreshTokens(self):
+        logger.debug("We should already have some tokens. Check if we need to refresh.")
+        logger.debug(self.tokens)
         if int(time.time()) > int(self.tokens['expires_at']):
             logger.info("Need to refresh Strava Tokens")
-
             new_tokens = self._getTokensWithRefresh()
             logger.info("Got new Strava tokens")
+            logger.debug(new_tokens)
             self._writeTokens(new_tokens)
 
                 
@@ -79,9 +81,9 @@ class Strava:
         logger.info("Writing strava tokens to DDB")
 
         table = self._getDDBTable()
-        
+        logger.debug("Building token dict for storage")
         self.tokens = {"expires_at":tokens['expires_at'],"access_token":tokens['access_token'],"refresh_token":tokens['refresh_token']}
-
+        logger.debug("Writing token dict to DB")
         table.update_item(
             Key={
                 'Id': str(self.athleteId)
@@ -91,6 +93,7 @@ class Strava:
                 ':c': json.dumps(self.tokens)
             }
         )
+        logger.debug("New tokens written")
     
     def _getAthleteFromDDB(self):
         logger.info("Getting athlete from DDB")
@@ -214,18 +217,23 @@ class Strava:
         while True:
             counter = 0
             try:
+                logger.debug("Checking if tokens need a refresh")
                 self.refreshTokens()
+                logger.debug("Sending GET request to strava endpoint")
+                logger.debug(self.tokens['access_token'])
                 activity = requests.get(
                     endpoint,
                     headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=self.tokens['access_token'])}
                     )
                 if activity.status_code == 200:
+                    logger.debug("All good. Returning.")
                     return activity.json()
                 elif counter == RETRIES:
                     logger.error("Get failed even after retries")
                     logger.error("{} - {}".format(activity.status_code,activity.content))
                     exit()
                 else:
+                    logger.debug("Failed, but going to retry.")
                     counter+=1
                     time.sleep(PAUSE)
             except Exception as e:
