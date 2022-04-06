@@ -62,7 +62,9 @@ def lambda_handler(event, context):
     twitter = getTwitterClient()
     if twitter is  None:
         exit()
-    status = strava.makeTwitterString(athlete_stats=content,latest_event=activity)
+        
+    year = str(datetime.now().year)
+    status = strava.makeTwitterString(athlete_year_stats=content[year],latest_event=activity)
     
     if status is not None:
         logging.info("Tweet status locked and loaded...")
