@@ -177,9 +177,9 @@ class Strava:
             self.ddbTable = self.dynamodb.Table(self.ddbTableName)
             return self.ddbTable
     
-    def makeTwitterString(self,athlete_stats: dict,latest_event: dict):
-        year = str(datetime.datetime.now().year)
-        ytd = athlete_stats[year][latest_event['type']]
+    def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
+        
+        ytd = athlete_year_stats[latest_event['type']]
         
         ## Convert activity verb to a noun
         activity_type = latest_event['type']
@@ -190,7 +190,7 @@ class Strava:
         duration_sum =0
         distance_sum =0
         count_sum=0
-        for activity in athlete_stats[year]:
+        for activity_key, activity in athlete_year_stats.items():
             duration_sum+=activity['duration']
             distance_sum+=activity['distance']
             count_sum+=activity['count']
@@ -238,9 +238,9 @@ class Strava:
         return status
     
     def secsToStr(self,seconds):
-        if seconds > 86400:
+        if seconds > 86399:
             return "{} day(s) {}".format(math.floor(seconds/86400),time.strftime("%Hh %Mm %Ss", time.gmtime(seconds)))
-        elif seconds > 3600:
+        elif seconds > 3599:
             return time.strftime("%Hhr %Mmins %Sseconds", time.gmtime(seconds))
         else:
             return time.strftime("%M minutes and %S seconds", time.gmtime(seconds))
