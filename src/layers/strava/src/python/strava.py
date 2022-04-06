@@ -191,9 +191,9 @@ class Strava:
         distance_sum =0
         count_sum=0
         for activity in athlete_stats[year]:
-            duration_sum+=activity_type['duration']
-            distance_sum+=activity_type['distance']
-            count_sum+=activity_type['count']
+            duration_sum+=activity['duration']
+            distance_sum+=activity['distance']
+            count_sum+=activity['count']
         
         status_template = None
         if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
