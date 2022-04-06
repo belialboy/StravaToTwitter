@@ -52,5 +52,19 @@ class TestStrava(unittest.TestCase):
     latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123}
     self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 10.00km in 01hr 00mins 00seconds - https://www.strava.com/activities/123\nYTD for 60 rides 100.00km #KiloWhat")
   
+  
+  @patch('src.layers.strava.src.python.strava.Strava._getAthleteFromDDB')
+  @patch('src.layers.strava.src.python.strava.Strava.getCurrentAthlete')
+  def test_makeTwitterStatusWithZwift(self,getCurrentAthlete,getAthleteFromDDB):
+    tokens={"expires_at":1234567890,"access_token":"abcdef1234567890","refresh_token":"0987654321fedcba"}
+    getAthleteFromDDB.return_value = {"tokens": json.dumps(tokens)}
+    getCurrentAthlete.return_value = {"firstname": "Jonathan", "lastname": "Jenkyn"}
+    with open('test/payloads/ddb_body.json') as json_file:
+      body = json.load(json_file)
+    strava=Strava(stravaClientId="DEADBEEF", stravaClientSecret="FEEDBEEF",ddbTableName="Dynamo", athleteId = 1234567)
+    latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "device_name": "Zwift"}
+    self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 10.00km in 01hr 00mins 00seconds - https://www.strava.com/activities/123\nYTD for 60 rides 100.00km #KiloWhat #RideOn #Zwift")
+  
+  
 if __name__ == '__main__':
     unittest.main()
