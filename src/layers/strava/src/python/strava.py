@@ -200,7 +200,7 @@ class Strava:
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEKM:0.2f}km #KiloWhat"
         elif math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles #MilesAndMiles"
-        elif math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['duration'])/86400):
+        elif math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
         elif ytd['count'] == 1 or ytd['count']%10 == 0:
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
@@ -208,7 +208,7 @@ class Strava:
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEKM:0.2f}km #SelfPropelledKilos"
         elif math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}km #SelfPropelledMiles"
-        elif math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['duration'])/86400):
+        elif math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['elapsed_time'])/86400):
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDURATION} #SaddleSoreDays"
         elif count_sum%100 ==0:
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nThat's {ALLACTIVITYCOUNT} total activities this year. #ActiveAllTheTime"
