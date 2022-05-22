@@ -186,6 +186,8 @@ class Strava:
         if activity_type in self.VERBTONOUN:
             activity_type =  self.VERBTONOUN[activity_type]
         strava_athlete = self.getCurrentAthlete()
+        latest_activity_mph = math.floor(latest_event['distance']/160900)/math.floor(latest_event['elapsed_time']/3600)
+        ytd_activity_mph = math.floor((ytd['distance']-latest_event['distance'])/160900)/math.floor((ytd['duration']-latest_event['elapsed_time'])/3600)
         
         duration_sum =0
         distance_sum =0
@@ -196,23 +198,42 @@ class Strava:
             count_sum+=activity['count']
         
         status_template = None
-        if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEKM:0.2f}km #KiloWhat"
-        elif math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles #MilesAndMiles"
-        elif math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
-        elif ytd['count'] == 1 or ytd['count']%10 == 0:
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
-        elif math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
+        
+        ## COMMON MILESTONES
+        if math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
+            # If the most recent activity puts the sum of all the activities in that category for the year over a 100km stone
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEKM:0.2f}km #SelfPropelledKilos"
-        elif math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
+        if math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
+            # If the most recent activity puts the sum of all the activities in that category for the year over a 100mile stone
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}km #SelfPropelledMiles"
-        elif math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['elapsed_time'])/86400):
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDURATION} #SaddleSoreDays"
-        elif count_sum%100 ==0:
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nThat's {ALLACTIVITYCOUNT} total activities this year. #ActiveAllTheTime"
-            
+        if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['elapsed_time'])/86400):
+            # If the most recent activity puts the sum of all the activities' duration in that category for the year over a 1day stone
+            if activity_type == VERBTONOUN['Ride']:
+                status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s is {ALLACTIVITYDURATION} #SaddleSoreDays"
+            elif activity_type == VERBTONOUN['Run']:
+                status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #RunningDaze"
+            else:
+                status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #Another24h"
+        if count_sum%100 ==0:
+            # If this is their n00th activity in this category this year 
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nThat's {ALLACTIVITYCOUNT} total activities in this year. #ActiveAllTheTime"
+        if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
+            # If the total distance for all activities this year has just gone over a 100km stone
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEKM:0.2f}km #KiloWhat"
+        if math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
+            # If the total distance for all activities this year has just gone over a 100mile stone
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles #MilesAndMiles"
+        if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
+            # If the total duration for all activities this year has just gone over a 1day stone
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
+        if ytd['count'] == 1 or ytd['count']%10 == 0:
+            # If they've just done their first activity for the year, or a multiple of 10 activities for the entire year
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
+        if latest_activity_mph > ytd_activity_mph*1.05:
+            # If they were more than 5% faster than the year average for this activity
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} at ({ACTIVITY_MPH:0.2f})mph average #BackYourself"
+        ## RARE MILESTONES
+        
         if status_template is None:
             return None
         status = status_template.format(
@@ -230,11 +251,12 @@ class Strava:
             ALLACTIVITYDURATION=self.secsToStr(duration_sum),
             ALLACTIVITYDISTANCEKM=distance_sum/1000,
             ALLACTIVITYDISTANCEMILES=distance_sum/1609,
-            ALLACTIVITYCOUNT=count_sum
+            ALLACTIVITYCOUNT=count_sum,
+            ACTIVITYMPH=latest_activity_mph
             )
         if "device_name" in latest_event:
             if latest_event['device_name'] == 'Zwift':
-                status += " #RideOn #Zwift"
+                status += " #RideOn @GoZwift"
         return status
     
     def secsToStr(self,seconds):
