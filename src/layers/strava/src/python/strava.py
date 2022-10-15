@@ -181,6 +181,13 @@ class Strava:
         
         ytd = athlete_year_stats[latest_event['type']]
         
+        logger.info("Latest Event = ")
+        logger.info(latest_event)
+        
+        if latest_event['elapsed_time'] == 0:
+            logger.error("elapsed time is zero. Bailing.")
+            return None
+        
         ## Convert activity verb to a noun
         activity_type = latest_event['type']
         if activity_type in self.VERBTONOUN:
@@ -208,9 +215,9 @@ class Strava:
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}km #SelfPropelledMiles"
         if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['elapsed_time'])/86400):
             # If the most recent activity puts the sum of all the activities' duration in that category for the year over a 1day stone
-            if activity_type == VERBTONOUN['Ride']:
+            if activity_type == self.VERBTONOUN['Ride']:
                 status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s is {ALLACTIVITYDURATION} #SaddleSoreDays"
-            elif activity_type == VERBTONOUN['Run']:
+            elif activity_type == self.VERBTONOUN['Run']:
                 status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #RunningDaze"
             else:
                 status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #Another24h"
