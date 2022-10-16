@@ -189,8 +189,8 @@ class Strava:
         if activity_type in self.VERBTONOUN:
             activity_type =  self.VERBTONOUN[activity_type]
         strava_athlete = self.getCurrentAthlete()
-        latest_activity_mph = print('{:.1f}'.format((latest_event['distance']/160900)/(latest_event['elapsed_time']/3600))) 
-        ytd_activity_mph = print('{:.1f}'.format(((ytd['distance']-latest_event['distance'])/160900)/((ytd['duration']-latest_event['elapsed_time'])/3600)))
+        latest_activity_mph = float(print('{:.1f}'.format((latest_event['distance']/160900)/(latest_event['elapsed_time']/3600))))
+        ytd_activity_mph = float(print('{:.1f}'.format(((ytd['distance']-latest_event['distance'])/160900)/((ytd['duration']-latest_event['elapsed_time'])/3600))))
         
         duration_sum =0
         distance_sum =0
