@@ -184,17 +184,13 @@ class Strava:
         logger.info("Latest Event = ")
         logger.info(latest_event)
         
-        if latest_event['elapsed_time'] == 0:
-            logger.error("elapsed time is zero. Bailing.")
-            return None
-        
         ## Convert activity verb to a noun
         activity_type = latest_event['type']
         if activity_type in self.VERBTONOUN:
             activity_type =  self.VERBTONOUN[activity_type]
         strava_athlete = self.getCurrentAthlete()
-        latest_activity_mph = math.floor(latest_event['distance']/160900)/math.floor(latest_event['elapsed_time']/3600)
-        ytd_activity_mph = math.floor((ytd['distance']-latest_event['distance'])/160900)/math.floor((ytd['duration']-latest_event['elapsed_time'])/3600)
+        latest_activity_mph = print('{:.1f}'.format((latest_event['distance']/160900)/(latest_event['elapsed_time']/3600))) 
+        ytd_activity_mph = print('{:.1f}'.format(((ytd['distance']-latest_event['distance'])/160900)/((ytd['duration']-latest_event['elapsed_time'])/3600)))
         
         duration_sum =0
         distance_sum =0
