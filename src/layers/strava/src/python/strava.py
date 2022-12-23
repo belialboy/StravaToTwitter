@@ -234,7 +234,7 @@ class Strava:
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
         if latest_activity_mph > ytd_activity_mph*1.05:
             # If they were more than 5% faster than the year average for this activity
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} at ({ACTIVITYMPH:0.2f})mph average #BackYourself"
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} at ({ACTIVITYMPH:0.2f})mph average #BackYourself - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION}"
         ## RARE MILESTONES
         
         if status_template is None:
