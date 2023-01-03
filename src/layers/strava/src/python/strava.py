@@ -377,7 +377,7 @@ class Strava:
         return(self._get(endpoint))
         
     def _getSSM(self,parameterName):
-        return ssm.get_parameter(Name="{PREFIX}{PARAMNAME}".format(PREFIX=os.environ['ssmPrefix'],PARAMNAME=parameterName))
+        return ssm.get_parameter(Name="{PREFIX}{PARAMNAME}".format(PREFIX=os.environ['ssmPrefix'],PARAMNAME=parameterName))['Parameter']['Value']
         
     def _getEnv(self,variableName):
         return os.environ[variableName]
