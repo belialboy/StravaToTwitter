@@ -139,9 +139,10 @@ Resources:
           - !GetAtt Details.Arn
         - Sid: SSMAccess
           Effect: Allow
-          Action:
-            - ssm:GetParameter
-          Resource: !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
+          Action: 
+          - ssm:GetParameter
+          Resource: 
+          - !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
   # Our lambda function
 
   WebhookASync:
@@ -177,9 +178,10 @@ Resources:
           Resource: "*"
         - Sid: SSMAccess
           Effect: Allow
-          Action:
-            - ssm:GetParameter
-          Resource: !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
+          Action: 
+          - ssm:GetParameter
+          Resource: 
+          - !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
 
   Totals:
     Type: AWS::DynamoDB::Table
@@ -267,7 +269,8 @@ Resources:
           Effect: Allow
           Action:
             - ssm:GetParameter
-          Resource: !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
+          Resource: 
+          - !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
         
   RegisterWebhook:
     Type: 'Custom::RegisterWebhook'
