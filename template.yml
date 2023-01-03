@@ -8,24 +8,36 @@ Description: 'https://github.com/belialboy/StravaToTwitter/'
 ###
 
 Parameters:
+  pSSMPrefix:
+    Type: String
+    Description: If this field is filled, then it is assumed that you've already created the SSM parameters with that prefix, otherwise we'll make SSM parameters using the values you provide in the other fields.
   pTwitterConsumerKey:
     Type: String
     Description: The Twitter Consumer Key (Get this from the Twitter Developer Dashboard)
+    Default: "None"
   pTwitterConsumerSecret:
     Type: String
     Description: The Twitter Consumer Secret (Get this from the Twitter Developer Dashboard)
+    Default: "None"
   pTwitterAccessTokenKey:
     Type: String
     Description: The Twitter Access Token Key (Get this from the Twitter Developer Dashboard)
+    Default: "None"
   pTwitterAccessTokenSecret:
     Type: String
     Description: The Twitter Access Token Secret (Get this from the Twitter Developer Dashboard)
+    Default: "None"
   pStravaClientId:
     Type: String
     Description: The Client Id for this application.
+    Default: "None"
   pStravaClientSecret:
     Type: String
     Description: The Client Secret for this application
+    Default: "None"
+
+Conditions:
+  MakeSSMParams: !Equals [!Ref pSSMPrefix, ""]
 
 ###
 ### Template Resources
@@ -33,6 +45,54 @@ Parameters:
 
 Resources:
 
+  TwitterConsumerKey:
+    Type: AWS::SSM::Parameter
+    Conditions: MakeSSMParams
+    Properties:
+      Name: !Sub '{AWS::StackName}twitterConsumerKey'
+      Type: String
+      Value: !Ref pTwitterConsumerKey
+
+  TwitterConsumerSecret:
+    Type: AWS::SSM::Parameter
+    Conditions: MakeSSMParams
+    Properties:
+      Name: !Sub '{AWS::StackName}twitterConsumerSecret'
+      Type: String
+      Value: !Ref pTwitterConsumerSecret
+
+  TwitterAccessTokenKey:
+    Type: AWS::SSM::Parameter
+    Conditions: MakeSSMParams
+    Properties:
+      Name: !Sub '{AWS::StackName}twitterAccessTokenKey'
+      Type: String
+      Value: !Ref pTwitterAccessTokenKey
+      
+  TwitterAccessTokenSecret:
+    Type: AWS::SSM::Parameter
+    Conditions: MakeSSMParams
+    Properties:
+      Name: !Sub '{AWS::StackName}twitterAccessTokenSecret'
+      Type: String
+      Value: !Ref pTwitterAccessTokenSecret
+
+  StravaClientId:
+    Type: AWS::SSM::Parameter
+    Conditions: MakeSSMParams
+    Properties:
+      Name: !Sub '{AWS::StackName}stravaClientId'
+      Type: String
+      Value: !Ref pStravaClientId
+      
+  StravaClientSecret:
+    Type: AWS::SSM::Parameter
+    Conditions: MakeSSMParams
+    Properties:
+      Name: !Sub '{AWS::StackName}stravaClientSecret'
+      Type: String
+      Value: !Ref pStravaClientSecret
+      
   StravaLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -54,9 +114,9 @@ Resources:
       - !Ref StravaLayer
       Environment:
         Variables:
-          stravaClientId: !Ref pStravaClientId
-          stravaClientSecret: !Ref pStravaClientSecret
+          ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
           totalsTable: !Ref Totals
+          detailsTable: !Ref Details
           webhookASync: !Ref WebhookASync
       Events:
         HttpApiEvent:
@@ -74,7 +134,14 @@ Resources:
           - dynamodb:PutItem
           - dynamodb:GetItem
           - dynamodb:UpdateItem
-          Resource: !GetAtt Totals.Arn
+          Resource: 
+          - !GetAtt Totals.Arn
+          - !GetAtt Details.Arn
+        - Sid: SSMAccess
+          Effect: Allow
+          Action:
+            - ssm:GetParameter
+          Resource: !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
   # Our lambda function
 
   WebhookASync:
@@ -83,20 +150,16 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.9
-      Timeout: 60
+      Timeout: 600
       Handler: index.lambda_handler
       CodeUri: src/webhook/
       Layers:
       - !Ref StravaLayer
       Environment:
         Variables:
-          twitterConsumerKey: !Ref pTwitterConsumerKey
-          twitterConsumerSecret: !Ref pTwitterConsumerSecret
-          twitterAccessTokenKey: !Ref pTwitterAccessTokenKey
-          twitterAccessTokenSecret: !Ref pTwitterAccessTokenSecret
-          stravaClientId: !Ref pStravaClientId
-          stravaClientSecret: !Ref pStravaClientSecret
+          ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
           totalsTable: !Ref Totals
+          detailsTable: !Ref Details
       Policies:
       - Statement:
         - Sid: DynamoDBAccess
@@ -104,12 +167,19 @@ Resources:
           Action:
           - dynamodb:UpdateItem
           - dynamodb:GetItem
-          Resource: !GetAtt Totals.Arn
+          Resource: 
+          - !GetAtt Totals.Arn
+          - !GetAtt Details.Arn
         - Sid: STSAccess
           Effect: Allow
           Action:
           - sts:GetCallerIdentity
           Resource: "*"
+        - Sid: SSMAccess
+          Effect: Allow
+          Action:
+            - ssm:GetParameter
+          Resource: !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
 
   Totals:
     Type: AWS::DynamoDB::Table
@@ -123,6 +193,19 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+  
+  Details:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: id
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 30
   
   GetAPIAddressLambda:
     DependsOn: 
@@ -166,8 +249,7 @@ Resources:
         Variables:
           WebhookLambda: !Ref WebhookASync
           WebhookURL: !GetAtt GetAPIAddress.webhook
-          stravaClientId: !Ref pStravaClientId
-          stravaClientSecret: !Ref pStravaClientSecret
+          ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
       Policies:
       - Statement:
         - Sid: LambdaAccess
@@ -181,6 +263,11 @@ Resources:
           Action:
           - sts:GetCallerIdentity
           Resource: "*"
+        - Sid: SSMAccess
+          Effect: Allow
+          Action:
+            - ssm:GetParameter
+          Resource: !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
         
   RegisterWebhook:
     Type: 'Custom::RegisterWebhook'

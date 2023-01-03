@@ -101,7 +101,12 @@ def lambda_handler(event, context):
   status = FAILED
   # Get Current Subscription
   try:
-    stravaAuthPayload={"client_id":os.environ['stravaClientId'],"client_secret":os.environ['stravaClientSecret']}
+    # Get the SSM managed parameters
+    ssm = boto3.client("ssm")
+    stravaClientId=ssm.get_parameter(Name="{}stravaClientId".format(os.environ['ssmPrefix']))
+    stravaClientSecret=ssm.get_parameter(Name="{}stravaClientSecret".format(os.environ['ssmPrefix']))
+    
+    stravaAuthPayload={"client_id":stravaClientId,"client_secret":stravaClientSecret}
     CurrentSubscription=requests.get(stravaBaseURL,params=stravaAuthPayload)
     if CurrentSubscription.status_code == 200:
       logger.info("Got the Current Subscription from Strava")

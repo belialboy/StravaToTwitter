@@ -29,12 +29,7 @@ def lambda_handler(event, context):
         logger.error("This request does not have the subscription_id equal to the expected value.")
         return
     
-    strava = Strava(
-        athleteId=event['owner_id'],
-        stravaClientId=os.environ['stravaClientId'], 
-        stravaClientSecret=os.environ['stravaClientSecret'],
-        ddbTableName=os.environ["totalsTable"]
-        )
+    strava = Strava(athleteId=event['owner_id'])
     
     athlete_record = strava._getAthleteFromDDB()
     
@@ -47,13 +42,17 @@ def lambda_handler(event, context):
     
     # get the activity details
     activity = strava.getActivity(event['object_id'])
-   
     activity['type'] = activity['type'].replace("Virtual","")
+    # put the activity into the detail table
+    try:
+        strava.putDetailActivity(activity)
+    except Exception as e:
+        logger.error("Failed to add activity {ID} to the details table".format(ID=event['object_id']))
     
     if "body" not in athlete_record:
-        content = updateContent({},activity['type'],activity['distance'],activity['elapsed_time'])
+        content = strava.updateContent({},activity['type'],activity['distance'],activity['elapsed_time'])
     else:
-        content = updateContent(json.loads(athlete_record['body']),activity['type'],activity['distance'],activity['elapsed_time'])
+        content = strava.updateContent(json.loads(athlete_record['body']),activity['type'],activity['distance'],activity['elapsed_time'])
     
     strava._updateAthleteOnDB(json.dumps(content))
     
@@ -61,6 +60,7 @@ def lambda_handler(event, context):
 
     twitter = getTwitterClient()
     if twitter is  None:
+        logger.info("No twitter client configured. Bailing.")
         exit()
         
     year = str(datetime.now().year)
@@ -100,55 +100,19 @@ def lambda_handler(event, context):
         logging.info("Not tweeting this time... nothing special!")
 
     logging.info("Profit!")
-
-
-def updateContent(content, activityType, distance, duration):
-    year = str(datetime.now().year)
-    logging.info(content)
-    logging.info(year)
-    if year in content:
-        logging.info("Found year")
-        if activityType in content[year]:
-            logging.info("Found activity")
-            content[year][activityType]['distance']=content[year][activityType]['distance']+int(distance)
-            content[year][activityType]['duration']=content[year][activityType]['duration']+int(duration)
-            content[year][activityType]['count']+=1
-        else:
-            logging.info("New activity for the year")
-            content[year][activityType] = {
-              "distance":distance,
-              "duration":duration,
-              "count":1
-            }
-    else:
-        logging.info("New year!")
-        content[year]={
-            activityType:{
-                "distance":distance,
-                "duration":duration,
-                "count":1
-            }
-        }
-    return content
     
 def getTwitterClient():
-    if "TwitterSSMPrefix" in os.environ:
+    if "ssmPrefix" in os.environ:
         ssm = boto3.client("ssm")
         credentials={}
-        credentials['twitterConsumerKey'] = ssm.get_parameter(Name="{}twitterConsumerKey".format(os.environ['TwitterSSMPrefix']))
-        credentials['twitterConsumerSecret'] = ssm.get_parameter(Name="{}twitterConsumerSecret".format(os.environ['TwitterSSMPrefix']))
-        credentials['twitterAccessTokenKey'] = ssm.get_parameter(Name="{}twitterAccessTokenKey".format(os.environ['TwitterSSMPrefix']))
-        credentials['twitterAccessTokenSecret'] = ssm.get_parameter(Name="{}twitterAccessTokenSecret".format(os.environ['TwitterSSMPrefix']))
+        credentials['twitterConsumerKey'] = ssm.get_parameter(Name="{}twitterConsumerKey".format(os.environ['ssmPrefix']))
+        credentials['twitterConsumerSecret'] = ssm.get_parameter(Name="{}twitterConsumerSecret".format(os.environ['ssmPrefix']))
+        credentials['twitterAccessTokenKey'] = ssm.get_parameter(Name="{}twitterAccessTokenKey".format(os.environ['ssmPrefix']))
+        credentials['twitterAccessTokenSecret'] = ssm.get_parameter(Name="{}twitterAccessTokenSecret".format(os.environ['ssmPrefix']))
         client = Twython(credentials["twitterConsumerKey"], 
             credentials["twitterConsumerSecret"],
             credentials["twitterAccessTokenKey"], 
             credentials["twitterAccessTokenSecret"])
-        return client
-    elif "twitterConsumerKey" in os.environ:
-        client = Twython(os.environ["twitterConsumerKey"], 
-            os.environ["twitterConsumerSecret"],
-            os.environ["twitterAccessTokenKey"], 
-            os.environ["twitterAccessTokenSecret"])
         return client
     else:
         print("No twitter credentials found, so passing")

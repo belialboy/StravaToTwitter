@@ -5,6 +5,7 @@ import requests
 import boto3
 import datetime
 import math
+import os
 
 
 logger = logging.getLogger()
@@ -12,6 +13,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 PAUSE = 1 #second
 RETRIES = 5
+
+ssm = boto3.client("ssm")
 
 class Strava:
     STRAVA_API_URL = "https://www.strava.com/api/v3"
@@ -24,10 +27,13 @@ class Strava:
                "Walk": "walk"
              }
     
-    def __init__(self,stravaClientId: str, stravaClientSecret: str,ddbTableName: str, athleteId: int = None, auth:str = None):
-        self.stravaClientId = stravaClientId
-        self.stravaClientSecret = stravaClientSecret
-        self.ddbTableName = ddbTableName
+    def __init__(self, athleteId: int = None, auth:str = None):
+        
+        self.stravaClientId=self._getSSM("stravaClientId")
+        self.stravaClientSecret=self._getSSM("stravaClientSecret")
+        self.ddbTableName=self._getEnv("totalsTable")
+        self.ddbDetailTableName=self._getEnv("detailsTable")
+        
         if auth is not None:
             self._newAthlete(auth)
         elif athleteId is not None:
@@ -45,23 +51,38 @@ class Strava:
             if athlete_record is None:
                 # Get any existing data for runs, rides or swims they may have done, and add these as the starting status for the body element
                 logger.info("Net new athlete. Welcome!")
-                body_as_string="{}"
-                try:
-                    current_year = str(datetime.datetime.now().year)
-                    data_to_add = {}
-                    athlete_detail_json = self.getAthlete(self.athleteId)
-                    if athlete_detail_json['ytd_ride_totals']['count']>0:
-                        data_to_add['Ride']={"distance":athlete_detail_json['ytd_ride_totals']['distance'],"duration":athlete_detail_json['ytd_ride_totals']['elapsed_time'],"count":athlete_detail_json['ytd_ride_totals']['count']}
-                    if athlete_detail_json['ytd_run_totals']['count']>0:
-                        data_to_add['Run']={"distance":athlete_detail_json['ytd_run_totals']['distance'],"duration":athlete_detail_json['ytd_run_totals']['elapsed_time'],"count":athlete_detail_json['ytd_run_totals']['count']}
-                    if athlete_detail_json['ytd_swim_totals']['count']>0:
-                        data_to_add['Swim']={"distance":athlete_detail_json['ytd_swim_totals']['distance'],"duration":athlete_detail_json['ytd_swim_totals']['elapsed_time'],"count":athlete_detail_json['ytd_swim_totals']['count']}
-                    if len(data_to_add)>0:
-                        body_as_string=json.dumps({current_year:data_to_add})
-                except Exception as e:
-                    logger.error("Failed to collect details about the athletes previous activity. Sorry")
-                    logger.error(e)
-                self._putAthleteToDB(body_as_string)
+                current_year = str(datetime.datetime.now().year)
+                start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
+                page = 1
+                PER_PAGE = 30
+                content = {}
+                while True:
+                    activities = self._get(endpoint = "{STRAVA}/activities?after={EPOCH}&page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,EPOCH=start_epoch,PAGE=page,PER_PAGE=PER_PAGE))
+                    ## Add all activities to the details table
+                    for activity in activities:
+                        activity['type'] = activity['type'].replace("Virtual","")
+                        try:
+                            # if the activity is alread in the DDB, this will excpetion
+                            self.putDetailActivity(activity)
+                        except Exception as e:
+                            logger.error("Failed to add activity {ID}; trying to continue. This event will not be added to the totals.".format(ID=activity['id']))
+                        else:
+                            content=self.updateContent(
+                                    content=content,
+                                    activityType=activity['type'],
+                                    distance=activity['distance'], 
+                                    duration=activity['elapsed_time']
+                                    )
+                    ## Write what we have to the DDB table
+                    if page == 1:
+                        self._putAthleteToDB(json.dumps(content))
+                    else:
+                        self._updateAthleteOnDB(json.dumps(content))
+                    ## Are there more activities?
+                    if len(activities) < PER_PAGE:
+                        break
+                    page+=1
+                        
             self._writeTokens(self.tokens)
         else:
             exit()
@@ -177,6 +198,51 @@ class Strava:
             self.ddbTable = self.dynamodb.Table(self.ddbTableName)
             return self.ddbTable
     
+    def _getDDBDetailTable(self):
+        try:
+            return self.ddbDetailTable
+        except AttributeError:
+            self.dynamodb = boto3.resource('dynamodb')
+            self.ddbDetailTable = self.dynamodb.Table(self.ddbDetailTableName)
+            return self.ddbDetailTable
+            
+    def putDetailActivity(self,activity):
+        table = self._getDDBDetailTable()
+        table.put_item(
+            Item={
+              'id': str(activity['id']),
+              'body': json.dumps(activity)
+            })
+            
+    def updateContent(self, content, activityType, distance, duration):
+        year = str(datetime.datetime.now().year)
+        logging.info(content)
+        logging.info(year)
+        if year in content:
+            logging.info("Found year")
+            if activityType in content[year]:
+                logging.info("Found activity")
+                content[year][activityType]['distance']=content[year][activityType]['distance']+int(distance)
+                content[year][activityType]['duration']=content[year][activityType]['duration']+int(duration)
+                content[year][activityType]['count']+=1
+            else:
+                logging.info("New activity for the year")
+                content[year][activityType] = {
+                  "distance":distance,
+                  "duration":duration,
+                  "count":1
+                }
+        else:
+            logging.info("New year!")
+            content[year]={
+                activityType:{
+                    "distance":distance,
+                    "duration":duration,
+                    "count":1
+                }
+            }
+        return content
+    
     def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         
         ytd = athlete_year_stats[latest_event['type']]
@@ -269,7 +335,6 @@ class Strava:
             return time.strftime("%Hhr %Mmins %Sseconds", time.gmtime(seconds))
         else:
             return time.strftime("%M minutes and %S seconds", time.gmtime(seconds))
-
                 
     def _get(self,endpoint):
         while True:
@@ -311,3 +376,8 @@ class Strava:
         endpoint = "{STRAVA}/athletes/{ID}/stats".format(STRAVA=self.STRAVA_API_URL,ID=athleteId)
         return(self._get(endpoint))
         
+    def _getSSM(self,parameterName):
+        return ssm.get_parameter(Name="{PREFIX}{PARAMNAME}".format(PREFIX=os.environ['ssmPrefix'],PARAMNAME=parameterName))
+        
+    def _getEnv(self,variableName):
+        return os.environ[variableName]

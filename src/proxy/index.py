@@ -33,10 +33,13 @@ def lambda_handler(event, context):
         
         logger.info(redirectUrl)
         
+        ssm=boto3.client("ssm")
+        stravaClientId=ssm.get_parameter(Name="{}stravaClientId".format(os.environ['ssmPrefix']))
+        
         returnable = {
             "statusCode": 301,
             "headers": {
-               "Location": "https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT}&response_type=code&scope=activity:read_all".format(CLIENT_ID=os.environ['stravaClientId'],REDIRECT=redirectUrl)
+               "Location": "https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT}&response_type=code&scope=activity:read_all".format(CLIENT_ID=stravaClientId,REDIRECT=redirectUrl)
             },
             "body": ""
         }
@@ -54,8 +57,10 @@ def lambda_handler(event, context):
            
         if "queryStringParameters" in event and "code" in event['queryStringParameters']:
             try:
-                strava = Strava(auth=event['queryStringParameters']['code'],stravaClientId=os.environ['stravaClientId'],stravaClientSecret=os.environ['stravaClientSecret'],ddbTableName=os.environ["totalsTable"])
+                strava = Strava(auth=event['queryStringParameters']['code'])
             
+                strava.catchup()
+                
                 returnable = {
                     "statusCode": 200,
                     "headers": {

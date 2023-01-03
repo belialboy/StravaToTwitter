@@ -2,14 +2,9 @@ version: 0.2
 env:
   variables:
     stackName: "Strava2TwitterDev"
+    ssmPrefix: "p"
   parameter-store:
     pCodeBucket: "pStrava2twitterCodeBucket"
-    pTwitterAccessTokenKey: "pTwitterAccessTokenKey"
-    pTwitterAccessTokenSecret: "pTwitterAccessTokenSecret"
-    pTwitterConsumerKey: "pTwitterConsumerKey"
-    pTwitterConsumerSecret: "pTwitterConsumerSecret"
-    pStravaClientId: "pStravaClientId"
-    pStravaClientSecret: "pStravaClientSecret"
     pPushBullet: "pPushBullet"
 phases:
   install:
@@ -29,6 +24,6 @@ phases:
   post_build:
     commands:
       - echo "Deploy"
-      - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pStravaClientSecret,ParameterValue=$pStravaClientSecret ParameterKey=pStravaClientId,ParameterValue=$pStravaClientId ParameterKey=pTwitterAccessTokenKey,ParameterValue=$pTwitterAccessTokenKey ParameterKey=pTwitterAccessTokenSecret,ParameterValue=$pTwitterAccessTokenSecret ParameterKey=pTwitterConsumerKey,ParameterValue=$pTwitterConsumerKey ParameterKey=pTwitterConsumerSecret,ParameterValue=$pTwitterConsumerSecret"
+      - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pSSMPrefix,ParameterValue=$ssmPrefix"
       # Send a Pushbullet notification about the update to the stack
       - curl --silent -u """$pPushBullet"":" -d type="note" -d body="Updated $stackName" -d title="AWS Codebuild" 'https://api.pushbullet.com/v2/pushes'
