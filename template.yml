@@ -142,7 +142,8 @@ Resources:
           Action: 
           - ssm:GetParameter
           Resource: 
-          - !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
+          - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*'
+          - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
   # Our lambda function
 
   WebhookASync:
@@ -181,7 +182,8 @@ Resources:
           Action: 
           - ssm:GetParameter
           Resource: 
-          - !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
+          - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*'
+          - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
 
   Totals:
     Type: AWS::DynamoDB::Table
@@ -270,7 +272,8 @@ Resources:
           Action:
             - ssm:GetParameter
           Resource: 
-          - !If [MakeSSMParams, !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*',!Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
+          - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*'
+          - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
         
   RegisterWebhook:
     Type: 'Custom::RegisterWebhook'
