@@ -58,8 +58,6 @@ def lambda_handler(event, context):
         if "queryStringParameters" in event and "code" in event['queryStringParameters']:
             try:
                 strava = Strava(auth=event['queryStringParameters']['code'])
-            
-                strava.catchup()
                 
                 returnable = {
                     "statusCode": 200,
