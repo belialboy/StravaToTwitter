@@ -103,8 +103,8 @@ def lambda_handler(event, context):
   try:
     # Get the SSM managed parameters
     ssm = boto3.client("ssm")
-    stravaClientId=ssm.get_parameter(Name="{}stravaClientId".format(os.environ['ssmPrefix']))
-    stravaClientSecret=ssm.get_parameter(Name="{}stravaClientSecret".format(os.environ['ssmPrefix']))
+    stravaClientId=ssm.get_parameter(Name="{}StravaClientId".format(os.environ['ssmPrefix']))
+    stravaClientSecret=ssm.get_parameter(Name="{}StravaClientSecret".format(os.environ['ssmPrefix']))
     
     stravaAuthPayload={"client_id":stravaClientId,"client_secret":stravaClientSecret}
     CurrentSubscription=requests.get(stravaBaseURL,params=stravaAuthPayload)

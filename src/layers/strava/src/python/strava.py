@@ -29,8 +29,8 @@ class Strava:
     
     def __init__(self, athleteId: int = None, auth:str = None):
         
-        self.stravaClientId=self._getSSM("stravaClientId")
-        self.stravaClientSecret=self._getSSM("stravaClientSecret")
+        self.stravaClientId=self._getSSM("StravaClientId")
+        self.stravaClientSecret=self._getSSM("StravaClientSecret")
         self.ddbTableName=self._getEnv("totalsTable")
         self.ddbDetailTableName=self._getEnv("detailsTable")
         

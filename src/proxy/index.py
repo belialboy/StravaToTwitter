@@ -34,7 +34,7 @@ def lambda_handler(event, context):
         logger.info(redirectUrl)
         
         ssm=boto3.client("ssm")
-        stravaClientId=ssm.get_parameter(Name="{}stravaClientId".format(os.environ['ssmPrefix']))
+        stravaClientId=ssm.get_parameter(Name="{}StravaClientId".format(os.environ['ssmPrefix']))
         
         returnable = {
             "statusCode": 301,

@@ -49,7 +49,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Condition: MakeSSMParams
     Properties:
-      Name: !Sub '{AWS::StackName}twitterConsumerKey'
+      Name: !Sub '{AWS::StackName}TwitterConsumerKey'
       Type: String
       Value: !Ref pTwitterConsumerKey
 
@@ -57,7 +57,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Condition: MakeSSMParams
     Properties:
-      Name: !Sub '{AWS::StackName}twitterConsumerSecret'
+      Name: !Sub '{AWS::StackName}TwitterConsumerSecret'
       Type: String
       Value: !Ref pTwitterConsumerSecret
 
@@ -65,7 +65,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Condition: MakeSSMParams
     Properties:
-      Name: !Sub '{AWS::StackName}twitterAccessTokenKey'
+      Name: !Sub '{AWS::StackName}TwitterAccessTokenKey'
       Type: String
       Value: !Ref pTwitterAccessTokenKey
       
@@ -73,7 +73,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Condition: MakeSSMParams
     Properties:
-      Name: !Sub '{AWS::StackName}twitterAccessTokenSecret'
+      Name: !Sub '{AWS::StackName}TwitterAccessTokenSecret'
       Type: String
       Value: !Ref pTwitterAccessTokenSecret
 
@@ -81,7 +81,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Condition: MakeSSMParams
     Properties:
-      Name: !Sub '{AWS::StackName}stravaClientId'
+      Name: !Sub '{AWS::StackName}StravaClientId'
       Type: String
       Value: !Ref pStravaClientId
       
@@ -89,7 +89,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Condition: MakeSSMParams
     Properties:
-      Name: !Sub '{AWS::StackName}stravaClientSecret'
+      Name: !Sub '{AWS::StackName}StravaClientSecret'
       Type: String
       Value: !Ref pStravaClientSecret
       

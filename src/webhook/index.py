@@ -67,7 +67,6 @@ def lambda_handler(event, context):
     status = strava.makeTwitterString(athlete_year_stats=content[year],latest_event=activity)
     
     if status is not None:
-        logging.info("Tweet status locked and loaded...")
         logging.info(status)
         if ("photos" in activity and 
             "primary" in activity['photos'] and 
@@ -105,10 +104,10 @@ def getTwitterClient():
     if "ssmPrefix" in os.environ:
         ssm = boto3.client("ssm")
         credentials={}
-        credentials['twitterConsumerKey'] = ssm.get_parameter(Name="{}twitterConsumerKey".format(os.environ['ssmPrefix']))
-        credentials['twitterConsumerSecret'] = ssm.get_parameter(Name="{}twitterConsumerSecret".format(os.environ['ssmPrefix']))
-        credentials['twitterAccessTokenKey'] = ssm.get_parameter(Name="{}twitterAccessTokenKey".format(os.environ['ssmPrefix']))
-        credentials['twitterAccessTokenSecret'] = ssm.get_parameter(Name="{}twitterAccessTokenSecret".format(os.environ['ssmPrefix']))
+        credentials['twitterConsumerKey'] = ssm.get_parameter(Name="{}TwitterConsumerKey".format(os.environ['ssmPrefix']))
+        credentials['twitterConsumerSecret'] = ssm.get_parameter(Name="{}TwitterConsumerSecret".format(os.environ['ssmPrefix']))
+        credentials['twitterAccessTokenKey'] = ssm.get_parameter(Name="{}TwitterAccessTokenKey".format(os.environ['ssmPrefix']))
+        credentials['twitterAccessTokenSecret'] = ssm.get_parameter(Name="{}TwitterAccessTokenSecret".format(os.environ['ssmPrefix']))
         client = Twython(credentials["twitterConsumerKey"], 
             credentials["twitterConsumerSecret"],
             credentials["twitterAccessTokenKey"], 
