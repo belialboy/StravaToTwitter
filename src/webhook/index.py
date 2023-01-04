@@ -26,7 +26,7 @@ def lambda_handler(event, context):
     
     if "stravaId" in os.environ:
       if 'subscription_id' not in event or int(event['subscription_id']) != int(os.environ['stravaId']):
-        logger.error("This request does not have the subscription_id equal to the expected value.")
+        logger.error("This request does not have the checksum equal to the expected value.") # 'checksum' is obfustication, but it'll do for now
         return
     
     strava = Strava(athleteId=event['owner_id'])
@@ -43,11 +43,6 @@ def lambda_handler(event, context):
     # get the activity details
     activity = strava.getActivity(event['object_id'])
     activity['type'] = activity['type'].replace("Virtual","")
-    # put the activity into the detail table
-    try:
-        strava.putDetailActivity(activity)
-    except Exception as e:
-        logger.error("Failed to add activity {ID} to the details table".format(ID=event['object_id']))
     
     if "body" not in athlete_record:
         content = strava.updateContent({},activity['type'],activity['distance'],activity['elapsed_time'])
@@ -57,7 +52,16 @@ def lambda_handler(event, context):
     strava._updateAthleteOnDB(json.dumps(content))
     
     logger.info(content)
+    
+    # put the activity into the detail table
+    try:
+        strava.putDetailActivity(activity)
+    except Exception as e:
+        logger.error("Failed to add activity {ID} to the details table".format(ID=event['object_id']))
+    else:
+        logger.info("Activity stored in detail database ({ID})".format(ID=event['object_id']))
 
+    # build a string to tweet
     twitter = getTwitterClient()
     if twitter is  None:
         logger.info("No twitter client configured. Bailing.")
@@ -103,15 +107,10 @@ def lambda_handler(event, context):
 def getTwitterClient():
     if "ssmPrefix" in os.environ:
         ssm = boto3.client("ssm")
-        credentials={}
-        credentials['twitterConsumerKey'] = ssm.get_parameter(Name="{}TwitterConsumerKey".format(os.environ['ssmPrefix']))['Parameter']['Value']
-        credentials['twitterConsumerSecret'] = ssm.get_parameter(Name="{}TwitterConsumerSecret".format(os.environ['ssmPrefix']))['Parameter']['Value']
-        credentials['twitterAccessTokenKey'] = ssm.get_parameter(Name="{}TwitterAccessTokenKey".format(os.environ['ssmPrefix']))['Parameter']['Value']
-        credentials['twitterAccessTokenSecret'] = ssm.get_parameter(Name="{}TwitterAccessTokenSecret".format(os.environ['ssmPrefix']))['Parameter']['Value']
-        client = Twython(credentials["twitterConsumerKey"], 
-            credentials["twitterConsumerSecret"],
-            credentials["twitterAccessTokenKey"], 
-            credentials["twitterAccessTokenSecret"])
+        client = Twython(ssm.get_parameter(Name="{}TwitterConsumerKey".format(os.environ['ssmPrefix']))['Parameter']['Value'], 
+            ssm.get_parameter(Name="{}TwitterConsumerSecret".format(os.environ['ssmPrefix']))['Parameter']['Value'],
+            ssm.get_parameter(Name="{}TwitterAccessTokenKey".format(os.environ['ssmPrefix']))['Parameter']['Value'], 
+            ssm.get_parameter(Name="{}TwitterAccessTokenSecret".format(os.environ['ssmPrefix']))['Parameter']['Value'])
         return client
     else:
         print("No twitter credentials found, so passing")
