@@ -186,11 +186,9 @@ Resources:
           - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
           
   MonthlyPostLambda:
-    DependsOn: 
-    - Totals
     Type: AWS::Serverless::Function
     Properties:
-       Runtime: python3.9
+      Runtime: python3.9
       Timeout: 600
       Handler: index.lambda_handler
       CodeUri: src/monthly/
