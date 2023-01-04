@@ -220,7 +220,7 @@ Resources:
         Schedule:
           Type: Schedule
           Properties:
-            Schedule: 'cron(0 8 1 * ? *)''
+            Schedule: 'cron(0 8 1 * ? *)'
             Name: ScheduleForStravaMonthly
             Description: Executes the Strava Monthly catalog function every month
             Enabled: true
