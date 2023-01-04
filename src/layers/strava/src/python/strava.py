@@ -210,8 +210,10 @@ class Strava:
         table = self._getDDBDetailTable()
         table.put_item(
             Item={
-              'id': str(activity['id']),
-              'body': json.dumps(activity)
+              'activityId': int(activity['id']),
+              'athleteId': int(self.athleteId),
+              'eventEpoch': int(datetime.datetime.strptime(activity['start_date'],"%Y-%m-%dT%H:%M:%SZ").timestamp()),
+              'event': json.dumps(activity)
             })
             
     def updateContent(self, content, activityType, distance, duration):
