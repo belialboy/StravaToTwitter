@@ -242,11 +242,29 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties: 
       AttributeDefinitions: 
-        - AttributeName: id
+        - AttributeName: activityId
+          AttributeType: N
+        - AttributeName: athleteId
+          AttributeType: N
+        - AttributeName: eventEpoch
+          AttribuetType: N
+        - AttributeName: event
           AttributeType: S
       KeySchema: 
-        - AttributeName: id
+        - AttributeName: activityId
           KeyType: HASH
+      LocalSecondaryIndexes: 
+        - IndexName: "myLSI"
+          KeySchema: 
+            - AttributeName: athleteId
+              KeyType: HASH
+            - AttributeName: eventEpoch
+              KeyType: RANGE
+          Projection: 
+            NonKeyAttributes: 
+              - event
+              - activityId
+            ProjectionType: "INCLUDE"
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 30
