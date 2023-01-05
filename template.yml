@@ -252,7 +252,7 @@ Resources:
         - AttributeName: activityId
           KeyType: HASH
         - AttributeName: athleteId
-          KeyType: HASH
+          KeyType: RANGE
       LocalSecondaryIndexes: 
         - IndexName: "searchForAthleteInTimeRange"
           KeySchema: 
