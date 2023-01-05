@@ -247,14 +247,14 @@ Resources:
         - AttributeName: athleteId
           AttributeType: N
         - AttributeName: eventEpoch
-          AttribuetType: N
+          AttributeType: N
         - AttributeName: event
           AttributeType: S
       KeySchema: 
         - AttributeName: activityId
           KeyType: HASH
       LocalSecondaryIndexes: 
-        - IndexName: "myLSI"
+        - IndexName: "searchForAthleteInTimeRange"
           KeySchema: 
             - AttributeName: athleteId
               KeyType: HASH

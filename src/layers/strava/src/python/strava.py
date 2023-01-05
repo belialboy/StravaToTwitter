@@ -257,8 +257,9 @@ class Strava:
         if activity_type in self.VERBTONOUN:
             activity_type =  self.VERBTONOUN[activity_type]
         strava_athlete = self.getCurrentAthlete()
-        latest_activity_mph = float('{:.1f}'.format((latest_event['distance']/160900)/(latest_event['elapsed_time']/3600)))
-        ytd_activity_mph = float('{:.1f}'.format(((ytd['distance']-latest_event['distance'])/160900)/((ytd['duration']-latest_event['elapsed_time'])/3600)))
+        
+        latest_activity_mph = self.secAndMetersToMPH(latest_event['distance'],latest_event['elapsed_time'])
+        ytd_activity_mph = self.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event['elapsed_time'])
         
         duration_sum =0
         distance_sum =0
@@ -297,8 +298,11 @@ class Strava:
         if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
             # If the total duration for all activities this year has just gone over a 1day stone
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
-        if ytd['count'] == 1 or ytd['count']%10 == 0:
-            # If they've just done their first activity for the year, or a multiple of 10 activities for the entire year
+        if ytd['count'] == 1:
+            # If they've just done their first activity for the year
+            status_template = "{FIRSTNAME} {LASTNAME} did their first {TYPE} this year. {FIRSTNAME} did {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #OffTheStartingBlock"
+        if ytd['count']%10 == 0:
+            #  If they've just done a multiple of 10 activities for the entire year
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
         if latest_activity_mph > ytd_activity_mph*1.05:
             # If they were more than 5% faster than the year average for this activity
@@ -331,12 +335,25 @@ class Strava:
         return status
     
     def secsToStr(self,seconds):
-        if seconds > 86399:
-            return "{} day(s) {}".format(math.floor(seconds/86400),time.strftime("%Hh %Mm %Ss", time.gmtime(seconds)))
-        elif seconds > 3599:
-            return time.strftime("%Hhr %Mmins %Sseconds", time.gmtime(seconds))
+        if seconds > (86400*2)-1:
+            return "{} days {}".format(math.floor(seconds/86400),time.strftime("%Hh %Mm %Ss", time.gmtime(seconds)))
+        elif seconds > 86400-1:
+            return "1 day {}".format(time.strftime("%Hh %Mm %Ss", time.gmtime(seconds)))
+        elif seconds > 3600-1:
+            return time.strftime("%Hh %Mm %Ss", time.gmtime(seconds))
         else:
-            return time.strftime("%M minutes and %S seconds", time.gmtime(seconds))
+            return time.strftime("%Mm %Ss", time.gmtime(seconds))
+            
+    def secAndMetersToMPH(self, meters, seconds):
+        if seconds == 0:
+            return float('{:.1f}'.format(0))
+            
+        miles = meters/1609
+        hours = seconds/3600
+        
+        mph = miles/hours
+        
+        return float('{:.1f}'.format(mph))
                 
     def _get(self,endpoint):
         while True:
