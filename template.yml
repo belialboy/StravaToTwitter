@@ -248,8 +248,6 @@ Resources:
           AttributeType: N
         - AttributeName: eventEpoch
           AttributeType: N
-        - AttributeName: event
-          AttributeType: S
       KeySchema: 
         - AttributeName: activityId
           KeyType: HASH
@@ -262,7 +260,6 @@ Resources:
               KeyType: RANGE
           Projection: 
             NonKeyAttributes: 
-              - event
               - activityId
             ProjectionType: "INCLUDE"
       ProvisionedThroughput: 
