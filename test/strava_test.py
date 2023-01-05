@@ -44,14 +44,14 @@ class TestStrava(unittest.TestCase):
       tokens={"expires_at":1234567890,"access_token":"abcdef1234567890","refresh_token":"0987654321fedcba"}
       mock_method.return_value = {"tokens": json.dumps(tokens)}
       strava=Strava(athleteId = 1234567)
-      self.assertEqual(strava.secsToStr(1),"00 minutes and 01 seconds")
-      self.assertEqual(strava.secsToStr(60),"01 minutes and 00 seconds")
-      self.assertEqual(strava.secsToStr(61),"01 minutes and 01 seconds")
-      self.assertEqual(strava.secsToStr(600),"10 minutes and 00 seconds")
-      self.assertEqual(strava.secsToStr(3601),"01hr 00mins 01seconds")
-      self.assertEqual(strava.secsToStr(36000),"10hr 00mins 00seconds")
-      self.assertEqual(strava.secsToStr(86401),"1 day(s) 00h 00m 01s")
-      self.assertEqual(strava.secsToStr(122400),"1 day(s) 10h 00m 00s")
+      self.assertEqual(strava.secsToStr(1),"00m 01s")
+      self.assertEqual(strava.secsToStr(60),"01m 00s")
+      self.assertEqual(strava.secsToStr(61),"01m 01s")
+      self.assertEqual(strava.secsToStr(600),"10m 00s")
+      self.assertEqual(strava.secsToStr(3601),"01h 00m 01s")
+      self.assertEqual(strava.secsToStr(36000),"10h 00m 00s")
+      self.assertEqual(strava.secsToStr(86401),"1 day 00h 00m 01s")
+      self.assertEqual(strava.secsToStr(122400),"1 day 10h 00m 00s")
   
   @patch('src.layers.strava.src.python.strava.Strava._getEnv')
   @patch('src.layers.strava.src.python.strava.Strava._getSSM')
@@ -67,7 +67,7 @@ class TestStrava(unittest.TestCase):
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
     latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123}
-    self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles (10.00km) in 01hr 00mins 00seconds at (0.10)mph average #BackYourself - https://www.strava.com/activities/123\nYTD for 60 rides 1 day(s) 00h 00m 01s")
+    self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles (10.00km) in 01h 00m 00s at (6.20)mph average #BackYourself - https://www.strava.com/activities/123\nYTD for 60 rides 1 day 00h 00m 01s")
   
   
   @patch('src.layers.strava.src.python.strava.Strava._getEnv')
@@ -84,7 +84,7 @@ class TestStrava(unittest.TestCase):
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
     latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "device_name": "Zwift"}
-    self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles (10.00km) in 01hr 00mins 00seconds at (0.10)mph average #BackYourself - https://www.strava.com/activities/123\nYTD for 60 rides 1 day(s) 00h 00m 01s #RideOn @GoZwift")
+    self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles (10.00km) in 01h 00m 00s at (6.20)mph average #BackYourself - https://www.strava.com/activities/123\nYTD for 60 rides 1 day 00h 00m 01s #RideOn @GoZwift")
   
   
 if __name__ == '__main__':
