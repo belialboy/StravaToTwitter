@@ -253,8 +253,6 @@ Resources:
           KeyType: HASH
         - AttributeName: athleteId
           KeyType: HASH
-        - AttributeName: eventEpoch
-          KeyType: RANGE
       LocalSecondaryIndexes: 
         - IndexName: "searchForAthleteInTimeRange"
           KeySchema: 
