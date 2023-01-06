@@ -48,7 +48,7 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "BasicCloudformation",
+            "Sid": "VisualEditor0",
             "Effect": "Allow",
             "Action": [
                 "cloudformation:DescribeStackEvents",
@@ -68,17 +68,17 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
             ]
         },
         {
-            "Sid": "S3RequirementsForCodeUpload",
+            "Sid": "VisualEditor1",
             "Effect": "Allow",
             "Action": [
                 "s3:ListBucket",
                 "s3:PutObject",
                 "s3:GetObject"
             ],
-            "Resource": "arn:aws:s3:::*/*"
+            "Resource": "arn:aws:s3:::strava2twittercode/*"
         },
         {
-            "Sid": "SSMAndDynamoDBRequirements",
+            "Sid": "VisualEditor2",
             "Effect": "Allow",
             "Action": [
                 "s3:ListAllMyBuckets",
@@ -106,7 +106,7 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
                 "lambda:InvokeFunction"
             ],
             "Resource": [
-                "arn:aws:lambda:*:*:function:*"
+                "arn:aws:lambda:*:930395124338:function:*"
             ]
         },
         {
@@ -114,8 +114,7 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
             "Effect": "Allow",
             "Action": [
                 "lambda:GetLayerVersion",
-                "lambda:PublishLayerVersion",
-                "lambda:DeleteLayerVersion"
+                "lambda:PublishLayerVersion"
             ],
             "Resource": [
                 "arn:aws:lambda:*:*:layer:*"
@@ -136,7 +135,7 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
                 "iam:GetRolePolicy"
             ],
             "Resource": [
-                "arn:aws:iam::*:role/*"
+                "arn:aws:iam::930395124338:role/*"
             ]
         },
         {
@@ -165,6 +164,21 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
             "Effect": "Allow",
             "Action": [
                 "apigateway:*"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "Events",
+            "Effect": "Allow",
+            "Action": [
+                "events:DescribeRule",
+                "events:ListRules",
+                "events:PutRule",
+                "events:PutTargets",
+                "events:RemoveTargets",
+                "events:DeleteRule"
             ],
             "Resource": [
                 "*"
