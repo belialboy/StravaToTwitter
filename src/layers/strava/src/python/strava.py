@@ -52,7 +52,7 @@ class Strava:
             if athlete_record is None:
                 # Get any existing data for runs, rides or swims they may have done, and add these as the starting status for the body element
                 logger.info("Net new athlete. Welcome!")
-                current_year = str(datetime.datetime.now().year)
+                current_year = datetime.datetime.now().year
                 start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
                 page = 1
                 PER_PAGE = 30
