@@ -164,14 +164,18 @@ Resources:
           detailsTable: !Ref Details
       Policies:
       - Statement:
-        - Sid: DynamoDBAccess
+        - Sid: DynamoDBAccessTotals
           Effect: Allow
           Action:
           - dynamodb:UpdateItem
           - dynamodb:GetItem
-          - dynamodb:PutItem
           Resource: 
           - !GetAtt Totals.Arn
+        - Sid: DynamoDBAccessDetails
+          Effect: Allow
+          Action:
+          - dynamodb:PutItem
+          Resource: 
           - !GetAtt Details.Arn
         - Sid: STSAccess
           Effect: Allow
