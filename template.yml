@@ -169,6 +169,7 @@ Resources:
           Action:
           - dynamodb:UpdateItem
           - dynamodb:GetItem
+          - dynamodb:PutItem
           Resource: 
           - !GetAtt Totals.Arn
           - !GetAtt Details.Arn
