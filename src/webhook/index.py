@@ -13,6 +13,7 @@ import math
 from io import BytesIO
 from botocore.exceptions import ClientError
 from strava import Strava
+import traceback
 
 debug = False
 
@@ -57,7 +58,9 @@ def lambda_handler(event, context):
     try:
         strava.putDetailActivity(activity)
     except Exception as e:
-        logger.error("Failed to add activity {ID} to the details table".format(ID=event['object_id']))
+        logger.error(traceback.format_exc())
+        logger.error("Failed to add activity {ID}; trying to continue. This event will not be added to the totals.".format(ID=activity['id']))
+                        
     else:
         logger.info("Activity stored in detail database ({ID})".format(ID=event['object_id']))
 

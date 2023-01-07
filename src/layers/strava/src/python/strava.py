@@ -6,6 +6,7 @@ import boto3
 import datetime
 import math
 import os
+import traceback
 
 
 logger = logging.getLogger()
@@ -62,11 +63,13 @@ class Strava:
                     for activity in activities:
                         activity['type'] = activity['type'].replace("Virtual","")
                         try:
-                            # if the activity is alread in the DDB, this will excpetion
+                            # if the activity is already in the DDB, this will excpetion
                             self.putDetailActivity(activity)
                         except Exception as e:
+                            logger.error(traceback.format_exc())
                             logger.error("Failed to add activity {ID}; trying to continue. This event will not be added to the totals.".format(ID=activity['id']))
                         else:
+                            # if the activity is not already in the ddb, then we can add it to the running totals
                             content=self.updateContent(
                                     content=content,
                                     activityType=activity['type'],
