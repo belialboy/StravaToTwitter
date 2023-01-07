@@ -303,13 +303,13 @@ class Strava:
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
         if ytd['count'] == 1:
             # If they've just done their first activity for the year
-            status_template = "{FIRSTNAME} {LASTNAME} did their first {TYPE} this year. {FIRSTNAME} did {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #OffTheStartingBlock"
+            status_template = "{FIRSTNAME} {LASTNAME} did their first {TYPE} this year. {FIRSTNAME} did {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL} #OffTheStartingBlock"
         if ytd['count']%10 == 0:
             #  If they've just done a multiple of 10 activities for the entire year
             status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
         if latest_activity_mph > ytd_activity_mph*1.05:
             # If they were more than 5% faster than the year average for this activity
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} at ({ACTIVITYMPH:0.2f})mph average #BackYourself - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION}"
+            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} at {ACTIVITYMPH:0.2f}mph average #BackYourself - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION}"
         ## RARE MILESTONES
         
         if status_template is None:
