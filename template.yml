@@ -35,6 +35,10 @@ Parameters:
     Type: String
     Description: The Client Secret for this application
     Default: "None"
+  pStravaClubId:
+    Type: String
+    Description: Leave as blank for individual mode. Set this to the numeric ID for a strava club and all registrations will check for that membership before enrolling and tweets will then contain member names.
+    Default: ""
 
 Conditions:
   MakeSSMParams: !Equals [!Ref pSSMPrefix, ""]
@@ -162,6 +166,7 @@ Resources:
           ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
           totalsTable: !Ref Totals
           detailsTable: !Ref Details
+          clubId: !Ref pStravaClubId
       Policies:
       - Statement:
         - Sid: DynamoDBAccessTotals
@@ -316,6 +321,7 @@ Resources:
           WebhookLambda: !Ref WebhookASync
           WebhookURL: !GetAtt GetAPIAddress.webhook
           ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
+          clubId: !Ref pStravaClubId
       Policies:
       - Statement:
         - Sid: LambdaAccess

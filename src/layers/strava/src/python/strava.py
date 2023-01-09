@@ -36,12 +36,13 @@ class Strava:
         self.ddbDetailTableName=self._getEnv("detailsTable")
         
         if auth is not None:
-            self._newAthlete(auth)
+            self.registrationResult = self._newAthlete(auth)
         elif athleteId is not None:
             self.athleteId = athleteId
             self.tokens = json.loads(self._getAthleteFromDDB()['tokens'])
     
     def _newAthlete(self,code):
+        
         new_tokens = self._getTokensWithCode(code)
         if new_tokens is not None:
             
@@ -50,8 +51,32 @@ class Strava:
             logger.info("Checking to see if the athlete is already registered")
             athlete_record = self._getAthleteFromDDB()
             if athlete_record is None:
-                # Get any existing data for runs, rides or swims they may have done, and add these as the starting status for the body element
+                
+                # Check to see if club mode is active, and if they are a member of the club
+                clubId = self._getEnv("clubId")
+                found = False
+                if len(self._getEnv("clubId")) == 0:
+                    while True:
+                        clubs = self._get(endpoint = "{STRAVA}/athlete/clubs?page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,PAGE=page,PER_PAGE=PER_PAGE))
+                        if len(clubs)==0:
+                            break
+                        for club in clubs:
+                            if club['id'] == int(clubId):
+                                found = True
+                                break
+                    if found == False:
+                        unauthorised = {
+                            "statusCode": 401,
+                            "headers": {
+                                "Content-Type": "text/html"
+                            },
+                            "body": "Unauthorised registration attempt."
+                        }
+                        return unauthorised
+                        
                 logger.info("Net new athlete. Welcome!")
+                
+                # Get any existing data for runs, rides or swims they may have done, and add these as the starting status for the body element
                 current_year = datetime.datetime.now().year
                 start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
                 page = 1
@@ -87,8 +112,17 @@ class Strava:
                     page+=1
                         
             self._writeTokens(self.tokens)
+            success = {
+                    "statusCode": 200,
+                    "headers": {
+                        "Content-Type": "text/html"
+                    },
+                    "body": "Unauthorised registration attempt."
+                }
+            return success
         else:
-            exit()
+            exit() # Don't give them any detail about the failure
+            
         
     def refreshTokens(self):
         logger.debug("We should already have some tokens. Check if we need to refresh.")
@@ -274,49 +308,55 @@ class Strava:
         
         status_template = None
         
+        name = "I"
+        if len(self._getEnv("clubId")) > 0:
+            name = "{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
+        
+            
+            
+        
         ## COMMON MILESTONES
         if math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100km stone
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEKM:0.2f}km #SelfPropelledKilos"
+            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEKM:0.2f}km #SelfPropelledKilos"
         if math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100mile stone
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}km #SelfPropelledMiles"
+            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}km #SelfPropelledMiles"
         if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['elapsed_time'])/86400):
             # If the most recent activity puts the sum of all the activities' duration in that category for the year over a 1day stone
             if activity_type == self.VERBTONOUN['Ride']:
-                status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s is {ALLACTIVITYDURATION} #SaddleSoreDays"
+                status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s is {ALLACTIVITYDURATION} #SaddleSoreDays"
             elif activity_type == self.VERBTONOUN['Run']:
-                status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #RunningDaze"
+                status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #RunningDaze"
             else:
-                status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #Another24h"
+                status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #Another24h"
         if count_sum%100 ==0:
             # If this is their n00th activity in this category this year 
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nThat's {ALLACTIVITYCOUNT} total activities in this year. #ActiveAllTheTime"
+            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nThat's {ALLACTIVITYCOUNT} total activities in this year. #ActiveAllTheTime"
         if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
             # If the total distance for all activities this year has just gone over a 100km stone
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEKM:0.2f}km #KiloWhat"
+            status_template = "{NAME} did a {TYPE} of {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEKM:0.2f}km #KiloWhat"
         if math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
             # If the total distance for all activities this year has just gone over a 100mile stone
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles #MilesAndMiles"
+            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles #MilesAndMiles"
         if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
             # If the total duration for all activities this year has just gone over a 1day stone
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
+            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
         if ytd['count'] == 1:
             # If they've just done their first activity for the year
-            status_template = "{FIRSTNAME} {LASTNAME} did their first {TYPE} this year. {FIRSTNAME} did {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL} #OffTheStartingBlock"
+            status_template = "{NAME} did their first {TYPE} this year. {FIRSTNAME} did {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL} #OffTheStartingBlock"
         if ytd['count']%10 == 0:
             #  If they've just done a multiple of 10 activities for the entire year
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
+            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
         if latest_activity_mph > ytd_activity_mph*1.05:
             # If they were more than 5% faster than the year average for this activity
-            status_template = "{FIRSTNAME} {LASTNAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} at {ACTIVITYMPH:0.2f}mph average #BackYourself - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION}"
+            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} at {ACTIVITYMPH:0.2f}mph average #BackYourself - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION}"
         ## RARE MILESTONES
         
         if status_template is None:
             return None
         status = status_template.format(
-            FIRSTNAME=strava_athlete['firstname'],
-            LASTNAME=strava_athlete['lastname'],
+            NAME=name,
             TYPE=activity_type,
             DISTANCEMILES=latest_event['distance']/1609,
             DISTANCEKM=latest_event['distance']/1000,
@@ -403,3 +443,6 @@ class Strava:
         
     def _getEnv(self,variableName):
         return os.environ[variableName]
+    
+    def getRegistrationResult(self):
+        return self.registrationResult

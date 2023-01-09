@@ -59,13 +59,7 @@ def lambda_handler(event, context):
             try:
                 strava = Strava(auth=event['queryStringParameters']['code'])
                 
-                returnable = {
-                    "statusCode": 200,
-                    "headers": {
-                        "Content-Type": "text/html"
-                    },
-                    "body": "Done! You're all registered!"
-                }
+                returnable = strava.getRegistrationResult()
             
             except ConnectionError as e:
                 logger.error("Failed to authenticate the athlete")

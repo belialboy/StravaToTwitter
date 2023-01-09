@@ -39,7 +39,7 @@ class TestStrava(unittest.TestCase):
   @patch('src.layers.strava.src.python.strava.Strava._getEnv')
   def test_secsToStr(self,getSSM,getEnv):
     getSSM.return_value = "DEADBEEF"
-    getEnv.return_value = "Dynamo"
+    getEnv.return_value = "1234"
     with mock.patch.object(Strava, '_getAthleteFromDDB') as mock_method:
       tokens={"expires_at":1234567890,"access_token":"abcdef1234567890","refresh_token":"0987654321fedcba"}
       mock_method.return_value = {"tokens": json.dumps(tokens)}
@@ -62,7 +62,7 @@ class TestStrava(unittest.TestCase):
     getAthleteFromDDB.return_value = {"tokens": json.dumps(tokens)}
     getCurrentAthlete.return_value = {"firstname": "Jonathan", "lastname": "Jenkyn"}
     getSSM.return_value = "DEADBEEF"
-    getEnv.return_value = "Dynamo"
+    getEnv.return_value = "1234"
     with open('test/payloads/ddb_body.json') as json_file:
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
@@ -79,7 +79,7 @@ class TestStrava(unittest.TestCase):
     getAthleteFromDDB.return_value = {"tokens": json.dumps(tokens)}
     getCurrentAthlete.return_value = {"firstname": "Jonathan", "lastname": "Jenkyn"}
     getSSM.return_value = "DEADBEEF"
-    getEnv.return_value = "Dynamo"
+    getEnv.return_value = "1234"
     with open('test/payloads/ddb_body.json') as json_file:
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
