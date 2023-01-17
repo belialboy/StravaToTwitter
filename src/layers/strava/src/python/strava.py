@@ -291,6 +291,9 @@ class Strava:
         logger.info("Latest Event = ")
         logger.info(latest_event)
         
+        if "private" in latest_event and latest_event['private']:
+            return None 
+        
         ## Convert activity verb to a noun
         activity_type = latest_event['type']
         if activity_type in self.VERBTONOUN:
@@ -300,6 +303,9 @@ class Strava:
         latest_activity_mph = self.secAndMetersToMPH(latest_event['distance'],latest_event['elapsed_time'])
         ytd_activity_mph = self.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event['elapsed_time'])
         latest_activity_kmph = self.secAndMetersToKmPH(latest_event['distance'],latest_event['elapsed_time'])
+        
+        achievement_count = 0
+        pr_count = 0
         
         duration_sum =0
         distance_sum =0
@@ -369,15 +375,22 @@ class Strava:
             # If they were more than 5% faster than the year average for this activity
             ytdstring = ytdactivity
             tags.append("#BackYourself")
+        if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
+            tags.append("{NUMACHIEVEMENTS} Achievements")
+            achievement_count=latest_event['achievement_count']
+        if "pr_count" in latest_event and latest_event['pr_count'] > 0:
+            tags.append("{PRCOUNT} PBs")
+            pr_count = latest_event['pr_count']
         ## RARE MILESTONES
         
         if len(tags) == 0:
             return None
+        
         if "device_name" in latest_event:
             if latest_event['device_name'] == 'Zwift':
                 tags.append("#RideOn")
                 tags.append("@GoZwift")
-                if "Tour de Zwift" in latest_event['name']:
+                if "Group Ride: Tour de Zwift" in latest_event['name']:
                     tags.append("#TdZ")
         
         local_start = datetime.datetime.strptime(latest_event['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
@@ -403,7 +416,9 @@ class Strava:
             ALLACTIVITYDISTANCEMILES=distance_sum/1609,
             ALLACTIVITYCOUNT=count_sum,
             ACTIVITYMPH=latest_activity_mph,
-            ACTIVITYKMPH=latest_activity_kmph
+            ACTIVITYKMPH=latest_activity_kmph,
+            NUMACHIEVEMENTS=achievement_count,
+            PRCOUNT=pr_count
             )
 
                 
