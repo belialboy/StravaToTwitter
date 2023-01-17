@@ -297,6 +297,7 @@ class Strava:
         
         latest_activity_mph = self.secAndMetersToMPH(latest_event['distance'],latest_event['elapsed_time'])
         ytd_activity_mph = self.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event['elapsed_time'])
+        latest_activity_kmph = self.secAndMetersToKmPH(latest_event['distance'],latest_event['elapsed_time'])
         
         duration_sum =0
         distance_sum =0
@@ -312,49 +313,72 @@ class Strava:
         if len(self._getEnv("clubId")) > 0:
             name = "{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
         
-            
-            
+        ytdall = "YTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION}"
+        ytdactivity = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION}"
+        
+        activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {ACTIVITYMPH}mph / {ACTIVITYKMPH}kmph - {ACTIVITYURL}"
+        
+        tags = []
+        
+        ytdstring = ""
         
         ## COMMON MILESTONES
         if math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100km stone
-            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEKM:0.2f}km #SelfPropelledKilos"
+            ytdstring = ytdall
+            tags.append("#SelfPropelledKilos")
         if math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100mile stone
-            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}km #SelfPropelledMiles"
+            ytdstring = ytdall
+            tags.append("#SelfPropelledMiles")
         if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['elapsed_time'])/86400):
             # If the most recent activity puts the sum of all the activities' duration in that category for the year over a 1day stone
+            ytdstring = ytdall
             if activity_type == self.VERBTONOUN['Ride']:
-                status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s is {ALLACTIVITYDURATION} #SaddleSoreDays"
+                tags.append("#SaddleSore")
             elif activity_type == self.VERBTONOUN['Run']:
-                status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #RunningDaze"
+                tags.append("#RunningDaze")
             else:
-                status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for all {ALLACTIVITYCOUNT} {TYPE}s {ALLACTIVITYDURATION} #Another24h"
+                tags.append("#Another24h")
         if count_sum%100 ==0:
             # If this is their n00th activity in this category this year 
-            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nThat's {ALLACTIVITYCOUNT} total activities in this year. #ActiveAllTheTime"
+            ytdstring = ytdactivity
+            tags.append("#ActiveAllTheTime")
         if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
             # If the total distance for all activities this year has just gone over a 100km stone
-            status_template = "{NAME} did a {TYPE} of {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEKM:0.2f}km #KiloWhat"
+            ytdstring = ytdactivity
+            tags.append("#KiloWhat")
         if math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
             # If the total distance for all activities this year has just gone over a 100mile stone
-            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles #MilesAndMiles"
+            ytdstring = ytdactivity
+            tags.append("#MilesAndMiles")
         if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
             # If the total duration for all activities this year has just gone over a 1day stone
-            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION} #AnotherDay"
+            ytdstring = ytdactivity
+            tags.append("#AnotherDay")
         if ytd['count'] == 1:
             # If they've just done their first activity for the year
-            status_template = "{NAME} did their first {TYPE} this year. {FIRSTNAME} did {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL} #OffTheStartingBlock"
+            tags.append("#OffTheStartingBlock")
         if ytd['count']%10 == 0:
             #  If they've just done a multiple of 10 activities for the entire year
-            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s: {TOTALDISTANCEMILES:0.2f}miles ({TOTALDISTANCEKM:0.2f}km) in {TOTALDURATION} #Another10"
+            ytdstring = ytdactivity
+            tags.append("#Another10")
         if latest_activity_mph > ytd_activity_mph*1.05:
             # If they were more than 5% faster than the year average for this activity
-            status_template = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles ({DISTANCEKM:0.2f}km) in {DURATION} at {ACTIVITYMPH:0.2f}mph average #BackYourself - {ACTIVITYURL}\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDURATION}"
+            ytdstring = ytdactivity
+            tags.append("#BackYourself")
         ## RARE MILESTONES
         
-        if status_template is None:
+        if len(tags) == 0:
             return None
+        if "device_name" in latest_event:
+            if latest_event['device_name'] == 'Zwift':
+                tags.append("#RideOn")
+                tags.append("@GoZwift")
+        
+        tag_string = ' '.join(tags)
+        status_template = activity+"\n"+ytdstring+" "+tag_string
+        
         status = status_template.format(
             NAME=name,
             TYPE=activity_type,
@@ -370,11 +394,12 @@ class Strava:
             ALLACTIVITYDISTANCEKM=distance_sum/1000,
             ALLACTIVITYDISTANCEMILES=distance_sum/1609,
             ALLACTIVITYCOUNT=count_sum,
-            ACTIVITYMPH=latest_activity_mph
+            ACTIVITYMPH=latest_activity_mph,
+            ACTIVITYKMPH=latest_activity_kmph
             )
-        if "device_name" in latest_event:
-            if latest_event['device_name'] == 'Zwift':
-                status += " #RideOn @GoZwift"
+            
+        print(status)    
+                
         return status
     
     def secsToStr(self,seconds):
@@ -397,6 +422,17 @@ class Strava:
         mph = miles/hours
         
         return float('{:.1f}'.format(mph))
+        
+    def secAndMetersToKmPH(self, meters, seconds):
+        if seconds == 0:
+            return float('{:.1f}'.format(0))
+        
+        km = meters/1000
+        hours = seconds/3600
+        
+        kmph = km/hours
+        
+        return float('{:.1f}'.format(kmph))
                 
     def _get(self,endpoint):
         while True:
