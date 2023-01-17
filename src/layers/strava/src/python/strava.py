@@ -284,6 +284,8 @@ class Strava:
     
     def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         
+        print(latest_event)
+        
         ytd = athlete_year_stats[latest_event['type']]
         
         logger.info("Latest Event = ")
@@ -375,6 +377,12 @@ class Strava:
             if latest_event['device_name'] == 'Zwift':
                 tags.append("#RideOn")
                 tags.append("@GoZwift")
+                if "Tour de Zwift" in latest_event['name']:
+                    tags.append("#TdZ")
+        
+        local_start = datetime.datetime.strptime(latest_event['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
+        if (activity_type == self.VERBTONOUN['Run'] or activity_type == self.VERBTONOUN['Walk']) and ("parkrun" in latest_event['name'].lower() or (4950<=latest_event['distance']<=5050 and local_start.weekday()==5 and 8 <=local_start.hour <= 10)):
+            tags.append("@parkrun")
         
         tag_string = ' '.join(tags)
         status_template = activity+"\n"+ytdstring+" "+tag_string
@@ -397,8 +405,7 @@ class Strava:
             ACTIVITYMPH=latest_activity_mph,
             ACTIVITYKMPH=latest_activity_kmph
             )
-            
-        print(status)    
+
                 
         return status
     

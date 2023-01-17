@@ -66,7 +66,7 @@ class TestStrava(unittest.TestCase):
     with open('test/payloads/ddb_body.json') as json_file:
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
-    latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123}
+    latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
     self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h 00m 00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h 00m 01s #SelfPropelledMiles #KiloWhat #AnotherDay #Another10 #BackYourself")
   
   
@@ -83,7 +83,7 @@ class TestStrava(unittest.TestCase):
     with open('test/payloads/ddb_body.json') as json_file:
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
-    latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "device_name": "Zwift"}
+    latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "device_name": "Zwift", "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
     self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h 00m 00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h 00m 01s #SelfPropelledMiles #KiloWhat #AnotherDay #Another10 #BackYourself #RideOn @GoZwift")
   
   
