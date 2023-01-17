@@ -2,7 +2,7 @@
 
 This project deploys a SAM application that registers itself with Strava and allows Strava users to register with it themselves. Once registered, any time that user registers a Strava activity, it creates a corresponding tweet through a single account that includes details about that activity, and also their year-to-date totals.
 
-As a "security dood" I've tried to use secure practices with the management of most sensitive information. Twitter credentials are stored as environmental variables in a Lambda function, and are also found in the Change Set for Cloudformation... so it's not perfect by any stretch. This is a hobby-project, and I wanted to make it as accessible as possible without burning unnecessary dollars on Secrets Manager and the like. Enjoy, and feel free to improve.
+As a "security dood" I've tried to use secure practices with the management of most sensitive information. Twitter credentials (for example) are stored in SSM parameter store. You can enter the values directly into the template, but be careful as they'll be visible in the cloudformation template. Better to put them into SSM yourself, and then provide the variable prefix in the template instead. Enjoy, and feel free to improve.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ Deploy the SAM assets:
 
 `sam deploy -g`
 
-This will then guide you through entering your Twitter keys (mentioned above) and and Strava App id/secret. 
+This will then guide you through entering your Twitter keys (mentioned above) and and Strava App id/secret. (Preference here is to manually create SSM parameters with a prefix outside of this process. i.e. `aws ssm put-parameter --name "Strava2Twitter-TwitterConsumerKey" --value "myTwitterConsumerKeyValueGoesHere" --type String` and then provide the cloudformation with that prefix `Strava2Twitter-` as this then stops the sensitive values being stored with the cloudformation stack)
 
 Once complete you will need to take the domain name (The bit after `https://` and before `/register/`, i.e. `abcde12345.execute-api.eu-west-1.amazonaws.com`) of your registration URL and set that as your `Authorization Callback Domain` for your application (the very last field on the [Update Application](https://www.strava.com/settings/api) page). You can now share the full registration URL with Strava users that want to use your application.
 
