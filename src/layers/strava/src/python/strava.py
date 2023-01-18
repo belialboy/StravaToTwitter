@@ -320,7 +320,7 @@ class Strava:
             RECOVERYTIME=self.getRecoveryTime(latest_event)
             )
         
-        if "description" in latest_event:
+        if "description" in latest_event and latest_event['description'] is not None:
             body = "{DESC}\n\n{BODY}".format(DESC=latest_event['description'],BODY=body)
             
         logger.info("Updating Strava Description String: '{STRING}'".format(STRING=body))
