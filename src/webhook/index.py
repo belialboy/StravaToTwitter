@@ -63,6 +63,9 @@ def lambda_handler(event, context):
                         
     else:
         logger.info("Activity stored in detail database ({ID})".format(ID=event['object_id']))
+        
+    #Update the activity description
+    strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity)
 
     # build a string to tweet
     twitter = getTwitterClient()

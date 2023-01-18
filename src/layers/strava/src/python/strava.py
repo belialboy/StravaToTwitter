@@ -282,9 +282,41 @@ class Strava:
             }
         return content
     
-    def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
+    def updateActivityDescription(self, athlete_year_stats: dict, latest_event: dict):
+        body = json.dumps({"description": self.makeStravaDescriptionString(athlete_year_stats,latest_event)})
+        endpoint = "{STRAVA}/activities/{ID}".format(STRAVA=self.STRAVA_API_URL,ID=latest_event['id'])
+        self._put(endpoint,body)
         
-        print(latest_event)
+    def makeStravaDescriptionString(self, athlete_year_stats: dict, latest_event: dict):
+        ytd = athlete_year_stats[latest_event['type']]
+        
+        duration_sum =0
+        distance_sum =0
+        count_sum=0
+        
+        for activity_key, activity in athlete_year_stats.items():
+            duration_sum+=activity['duration']
+            distance_sum+=activity['distance']
+            count_sum+=activity['count']
+            
+        activity_type = latest_event['type']
+        if activity_type in self.VERBTONOUN:
+            activity_type =  self.VERBTONOUN[activity_type]
+        
+        ytdactivity = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION}".format(
+            TYPE=activity_type,
+            TOTALDISTANCEMILES=ytd['distance']/1609,
+            TOTALDISTANCEKM=ytd['distance']/1000,
+            TOTALDURATION=self.secsToStr(ytd['duration']),
+            TOTALCOUNT=ytd['count']
+            )
+        
+        if "description" in latest_event:
+            ytdactivity = "{DESC}\n\n{YTD}".format(DESC=latest_event['description'],YTD=ytdactivity)
+            
+        return ytdactivity
+    
+    def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         
         ytd = athlete_year_stats[latest_event['type']]
         
@@ -321,14 +353,19 @@ class Strava:
         if len(self._getEnv("clubId")) > 0:
             name = "{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
         
-        ytdall = "YTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION}"
-        ytdactivity = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION}"
+        ytdall = "\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION} "
+        ytdactivity = "\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION} "
+        
         
         activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {ACTIVITYMPH}mph / {ACTIVITYKMPH}kmph - {ACTIVITYURL}"
+        if activity_type == self.VERBTONOUN['Walk']:
+            activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}"
+        elif activity_type == self.VERBTONOUN['Run']:
+            activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {MINUTEMILES}min/mile / {MINUTEKM}min/km - {ACTIVITYURL}"
         
         tags = []
         
-        ytdstring = ""
+        ytdstring = " "
         
         ## COMMON MILESTONES
         if math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
@@ -398,7 +435,7 @@ class Strava:
             tags.append("@parkrun")
         
         tag_string = ' '.join(tags)
-        status_template = activity+"\n"+ytdstring+" "+tag_string
+        status_template = activity+ytdstring+tag_string
         
         status = status_template.format(
             NAME=name,
@@ -418,7 +455,9 @@ class Strava:
             ACTIVITYMPH=latest_activity_mph,
             ACTIVITYKMPH=latest_activity_kmph,
             NUMACHIEVEMENTS=achievement_count,
-            PRCOUNT=pr_count
+            PRCOUNT=pr_count,
+            MINUTEMILES=self._getMinMiles(latest_event['elapsed_time'],latest_event['distance']),
+            MINUTEKM=self._getMinKm(latest_event['elapsed_time'],latest_event['distance'])
             )
 
                 
@@ -455,6 +494,22 @@ class Strava:
         kmph = km/hours
         
         return float('{:.1f}'.format(kmph))
+        
+    def _getMinMiles(self, seconds, meters):
+        if seconds == 0 or meters == 0:
+            return "0:00"
+        
+        minMile = 26.8224 / (meters/seconds)
+        
+        return "{MIN}:{SEC:02}".format(MIN=int(minMile//1),SEC=int((minMile%1)*60))
+        
+    def _getMinKm(self, seconds, meters):
+        if seconds == 0 or meters == 0:
+            return "0:00"
+            
+        minKm = ((seconds/60)/(meters/1000))
+        
+        return "{MIN}:{SEC:02}".format(MIN=int(minKm//1),SEC=int((minKm%1)*60))
                 
     def _get(self,endpoint):
         while True:
@@ -467,6 +522,35 @@ class Strava:
                 activity = requests.get(
                     endpoint,
                     headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=self.tokens['access_token'])}
+                    )
+                if activity.status_code == 200:
+                    logger.debug("All good. Returning.")
+                    return activity.json()
+                elif counter == RETRIES:
+                    logger.error("Get failed even after retries")
+                    logger.error("{} - {}".format(activity.status_code,activity.content))
+                    exit()
+                else:
+                    logger.debug("Failed, but going to retry.")
+                    counter+=1
+                    time.sleep(PAUSE)
+            except Exception as e:
+                logger.error("An Exception occured while getting {} ".format(endpoint))
+                logger.error(e)
+                exit()
+    
+    def _put(self,endpoint,body):
+        while True:
+            counter = 0
+            try:
+                logger.debug("Checking if tokens need a refresh")
+                self.refreshTokens()
+                logger.debug("Sending PUT request to strava endpoint")
+                logger.debug(self.tokens['access_token'])
+                activity = requests.get(
+                    endpoint,
+                    headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=self.tokens['access_token'])},
+                    body=body
                     )
                 if activity.status_code == 200:
                     logger.debug("All good. Returning.")
