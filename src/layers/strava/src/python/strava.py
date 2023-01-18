@@ -283,7 +283,7 @@ class Strava:
         return content
     
     def updateActivityDescription(self, athlete_year_stats: dict, latest_event: dict):
-        body = json.dumps({"description": self.makeStravaDescriptionString(athlete_year_stats,latest_event)})
+        body = {"description": self.makeStravaDescriptionString(athlete_year_stats,latest_event)}
         endpoint = "{STRAVA}/activities/{ID}".format(STRAVA=self.STRAVA_API_URL,ID=latest_event['id'])
         self._put(endpoint,body)
         
@@ -569,7 +569,7 @@ class Strava:
                 activity = requests.get(
                     endpoint,
                     headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=self.tokens['access_token'])},
-                    body=body
+                    data=body
                     )
                 if activity.status_code == 200:
                     logger.debug("All good. Returning.")
