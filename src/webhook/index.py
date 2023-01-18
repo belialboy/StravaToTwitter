@@ -65,6 +65,7 @@ def lambda_handler(event, context):
         logger.info("Activity stored in detail database ({ID})".format(ID=event['object_id']))
         
     #Update the activity description
+    year = str(datetime.now().year)
     strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity)
 
     # build a string to tweet
@@ -73,7 +74,6 @@ def lambda_handler(event, context):
         logger.info("No twitter client configured. Bailing.")
         exit()
         
-    year = str(datetime.now().year)
     status = strava.makeTwitterString(athlete_year_stats=content[year],latest_event=activity)
     
     if status is not None:

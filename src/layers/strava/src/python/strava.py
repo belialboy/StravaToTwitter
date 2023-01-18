@@ -288,6 +288,9 @@ class Strava:
         self._put(endpoint,body)
         
     def makeStravaDescriptionString(self, athlete_year_stats: dict, latest_event: dict):
+        
+        logger.info("Making Strava Description Update String")
+        
         ytd = athlete_year_stats[latest_event['type']]
         
         duration_sum =0
@@ -303,25 +306,40 @@ class Strava:
         if activity_type in self.VERBTONOUN:
             activity_type =  self.VERBTONOUN[activity_type]
         
-        ytdactivity = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION}".format(
+        template = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION}"
+        
+        if self.getRecoveryTime(latest_event) is not None:
+            template+="\nRecovery Time {RECOVERYTIME}"
+            
+        body = template.format(
             TYPE=activity_type,
             TOTALDISTANCEMILES=ytd['distance']/1609,
             TOTALDISTANCEKM=ytd['distance']/1000,
             TOTALDURATION=self.secsToStr(ytd['duration']),
-            TOTALCOUNT=ytd['count']
+            TOTALCOUNT=ytd['count'],
+            RECOVERYTIME=self.getRecoveryTime(latest_event)
             )
         
         if "description" in latest_event:
-            ytdactivity = "{DESC}\n\n{YTD}".format(DESC=latest_event['description'],YTD=ytdactivity)
+            body = "{DESC}\n\n{BODY}".format(DESC=latest_event['description'],BODY=body)
             
-        return ytdactivity
+        logger.info("Updating Strava Description String: '{STRING}'".format(STRING=body))
+            
+        return body
+        
+    def getRecoveryTime(self,event):
+        if "average_heartrate" not in event:
+            return None
     
+        wrt_sec = ((event['average_heartrate']*(event['elapsed_time']/60))/200)*3600
+        
+        return self.secsToStr(int(wrt_sec))
+        
     def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         
-        ytd = athlete_year_stats[latest_event['type']]
+        logger.info("Making Twitter String")
         
-        logger.info("Latest Event = ")
-        logger.info(latest_event)
+        ytd = athlete_year_stats[latest_event['type']]
         
         if "private" in latest_event and latest_event['private']:
             return None 
@@ -460,7 +478,8 @@ class Strava:
             MINUTEKM=self._getMinKm(latest_event['elapsed_time'],latest_event['distance'])
             )
 
-                
+        logger.info("Returning Twitter String: '{STRING}'".format(STRING=status))
+        
         return status
     
     def secsToStr(self,seconds):
