@@ -10,7 +10,10 @@ import traceback
 
 
 logger = logging.getLogger()
-logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+
+logging.getLogger()
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger.setLevel(logging.DEBUG)
 
 PAUSE = 1 #second
 RETRIES = 5
@@ -566,10 +569,11 @@ class Strava:
                 self.refreshTokens()
                 logger.debug("Sending PUT request to strava endpoint")
                 logger.debug(self.tokens['access_token'])
-                activity = requests.get(
+                activity = requests.put(
                     endpoint,
                     headers={'Authorization':"Bearer {ACCESS_TOKEN}".format(ACCESS_TOKEN=self.tokens['access_token'])},
-                    data=body
+                    data=body,
+                    timeout=PAUSE
                     )
                 if activity.status_code == 200:
                     logger.debug("All good. Returning.")
@@ -583,7 +587,7 @@ class Strava:
                     counter+=1
                     time.sleep(PAUSE)
             except Exception as e:
-                logger.error("An Exception occured while getting {} ".format(endpoint))
+                logger.error("An Exception occured while putting to {} ".format(endpoint))
                 logger.error(e)
                 exit()
                 
