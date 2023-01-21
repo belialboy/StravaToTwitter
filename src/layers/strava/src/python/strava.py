@@ -60,7 +60,7 @@ class Strava:
                 logger.info("Required ClubId = '{CLUBID}'".format(CLUBID=clubId))
                 found = False
                 PER_PAGE = 30
-                if clubId is None:
+                if clubId is not None:
                     page = 1
                     while True:
                         clubs = self._get(endpoint = "{STRAVA}/athlete/clubs?page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,PAGE=page,PER_PAGE=PER_PAGE))
