@@ -57,15 +57,20 @@ class Strava:
                 
                 # Check to see if club mode is active, and if they are a member of the club
                 clubId = self._getEnv("clubId")
+                logger.info("Required ClubId = '{CLUBID}'".format(CLUBID=clubId))
                 found = False
+                PER_PAGE = 30
                 if clubId is None:
+                    page = 1
                     while True:
                         clubs = self._get(endpoint = "{STRAVA}/athlete/clubs?page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,PAGE=page,PER_PAGE=PER_PAGE))
                         for club in clubs:
                             if club['id'] == int(clubId):
                                 found = True
                                 break
+                        page+=1
                     if found == False:
+                        logger.error("Athlete is not a member of the Club! Returning 401.")
                         unauthorised = {
                             "statusCode": 401,
                             "headers": {
