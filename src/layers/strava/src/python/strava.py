@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 logging.getLogger()
 logging.basicConfig(level=logging.INFO, format='%(message)s')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 PAUSE = 1 #second
 RETRIES = 5
@@ -61,8 +61,10 @@ class Strava:
                 found = False
                 PER_PAGE = 30
                 if clubId is not None:
+                    logger.info("Club is NOT None, so now looking for the club in the athletes record.")
                     page = 1
                     while True:
+                        logger.debug("Looking on page {PAGE} for athletes clubs".format(PAGE=page))
                         clubs = self._get(endpoint = "{STRAVA}/athlete/clubs?page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,PAGE=page,PER_PAGE=PER_PAGE))
                         for club in clubs:
                             if club['id'] == int(clubId):
@@ -376,7 +378,7 @@ class Strava:
         status_template = None
         
         name = "I"
-        if len(self._getEnv("clubId")) > 0:
+        if self._getEnv("clubId") is not None:
             name = "{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
         
         ytdall = "\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION} "
