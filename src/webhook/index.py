@@ -39,10 +39,10 @@ def lambda_handler(event, context):
     athlete_record = strava._getAthleteFromDDB()
     
     logger.info("Checking for race condition")
-    if "last_activity_id" in athlete_record and event['object_id'] == athlete_record['last_activity_id']:
+    if not debug and "last_activity_id" in athlete_record and event['object_id'] == athlete_record['last_activity_id']:
         logger.info("Bailing as this is a duplicate")
         exit()
-    else:
+    elif not debug:
         strava.updateLastActivity(event['object_id'])
     
     # get the activity details
