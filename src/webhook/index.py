@@ -25,6 +25,10 @@ def lambda_handler(event, context):
     logging.info("Underpants")
     logging.info(event)
     
+    if "debug" in event:
+        logger.setLevel(logging.DEBUG)
+        debug = True
+    
     if "stravaId" in os.environ:
       if 'subscription_id' not in event or int(event['subscription_id']) != int(os.environ['stravaId']):
         logger.error("This request does not have the checksum equal to the expected value.") # 'checksum' is obfustication, but it'll do for now
@@ -64,8 +68,48 @@ def lambda_handler(event, context):
     else:
         logger.info("Activity stored in detail database ({ID})".format(ID=event['object_id']))
         
-    #Update the activity description
     year = str(datetime.now().year)
+    
+    # build a string to tweet
+    twitter = getTwitterClient()
+    if twitter is not None:
+            
+        logger.info("Getting Ready to make a tweet. How exciting!")
+        status = strava.makeTwitterString(athlete_year_stats=content[year],latest_event=activity)
+        
+        if status is not None:
+            logging.info(status)
+            if ("photos" in activity and 
+                "primary" in activity['photos'] and 
+                activity['photos']['primary'] is not None and 
+                "urls" in activity['photos']['primary'] and 
+                "600" in activity['photos']['primary']['urls']):
+                    
+                    image = requests.get(activity['photos']['primary']['urls']['600'])
+                    if image.status_code == 200:
+                        try:
+                            photo = BytesIO(image.content)
+                            twitterImage = twitter.upload_media(media=photo)
+                        except Exception as e:
+                            logger.error("Failed to upload media from {} to twitter".format(activity['photos']['primary']['urls']['600']))
+                            logger.error(e)
+                            logger.error("Bailing on trying to use media, and now just tweeting the status without media")
+                            if not debug:
+                                twitter.update_status(status=status)
+                        else:
+                            if not debug:
+                              twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
+                    else:
+                      if not debug:
+                        twitter.update_status(status=status)
+            else:
+              if not debug:
+                twitter.update_status(status=status)
+            logging.info("Tweet published")
+        else:
+            logging.info("Not tweeting this time... nothing special!")
+
+    #Update the activity description
     try:
         strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity)
     except Exception as e:
@@ -74,46 +118,6 @@ def lambda_handler(event, context):
                         
     else:
         logger.info("Strava activity description updated.".format(ID=event['object_id']))
-    
-    # build a string to tweet
-    twitter = getTwitterClient()
-    if twitter is  None:
-        logger.info("No twitter client configured. Bailing.")
-        exit()
-        
-    status = strava.makeTwitterString(athlete_year_stats=content[year],latest_event=activity)
-    
-    if status is not None:
-        logging.info(status)
-        if ("photos" in activity and 
-            "primary" in activity['photos'] and 
-            activity['photos']['primary'] is not None and 
-            "urls" in activity['photos']['primary'] and 
-            "600" in activity['photos']['primary']['urls']):
-                
-                image = requests.get(activity['photos']['primary']['urls']['600'])
-                if image.status_code == 200:
-                    try:
-                        photo = BytesIO(image.content)
-                        twitterImage = twitter.upload_media(media=photo)
-                    except Exception as e:
-                        logger.error("Failed to upload media from {} to twitter".format(activity['photos']['primary']['urls']['600']))
-                        logger.error(e)
-                        logger.error("Bailing on trying to use media, and now just tweeting the status without media")
-                        if not debug:
-                            twitter.update_status(status=status)
-                    else:
-                        if not debug:
-                          twitter.update_status(status=status, media_ids=[twitterImage['media_id']])
-                else:
-                  if not debug:
-                    twitter.update_status(status=status)
-        else:
-          if not debug:
-            twitter.update_status(status=status)
-        logging.info("Tweet published")
-    else:
-        logging.info("Not tweeting this time... nothing special!")
 
     logging.info("Profit!")
     
