@@ -13,7 +13,7 @@ class TestProxy(unittest.TestCase):
         stream.close
         print("START{}END".format(output))
         self.assertIsNotNone(output)
-        expectation={"statusCode": 301, "headers": {"Location": "https://www.strava.com/oauth/authorize?client_id=pStravaClientId&redirect_uri=https://abcde123456.execute-api.eu-west-1.amazonaws.com/registersuccess/&response_type=code&scope=activity:read_all"}, "body": ""}
+        expectation={"statusCode": 301, "headers": {"Location": "https://www.strava.com/oauth/authorize?client_id=pStravaClientId&redirect_uri=https://abcde123456.execute-api.eu-west-1.amazonaws.com/registersuccess/&response_type=code&scope=activity:read_all,activity:write"}, "body": ""}
 
         self.assertEqual(json.loads(output),expectation)
         

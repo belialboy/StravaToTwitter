@@ -112,13 +112,16 @@ def lambda_handler(event, context):
 
     #Update the activity description
     try:
-        strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity)
+        result = strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity)
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error("Failed to update activity {ID} description; trying to continue.".format(ID=activity['id']))
                         
     else:
-        logger.info("Strava activity description updated.".format(ID=event['object_id']))
+        if result:
+            logger.info("Strava activity description updated.".format(ID=event['object_id']))
+        else:
+            logger.info("Strava activity description not updated.".format(ID=event['object_id']))
 
     logging.info("Profit!")
     

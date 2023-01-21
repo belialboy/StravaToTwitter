@@ -288,7 +288,9 @@ class Strava:
     def updateActivityDescription(self, athlete_year_stats: dict, latest_event: dict):
         body = {"description": self.makeStravaDescriptionString(athlete_year_stats,latest_event)}
         endpoint = "{STRAVA}/activities/{ID}".format(STRAVA=self.STRAVA_API_URL,ID=latest_event['id'])
-        self._put(endpoint,body)
+        if self._put(endpoint,body) is None:
+            return False
+        return True
         
     def makeStravaDescriptionString(self, athlete_year_stats: dict, latest_event: dict):
         
@@ -588,11 +590,11 @@ class Strava:
                 elif 400 <= activity.status_code <= 599:
                     logger.error("Got an error returned")
                     logger.error("code:{CODE}\nmessage:{MESSAGE}".format(CODE=activity.status_code,MESSAGE=activity.text))
-                    return {}
+                    return None
                 elif counter == RETRIES:
                     logger.error("Get failed even after retries")
                     logger.error("{} - {}".format(activity.status_code,activity.content))
-                    return {}
+                    return None
                 else:
                     logger.debug("Failed ({COUNT}<{RETRIES}), but going to retry.".format(COUNT=counter,RETRIES=RETRIES))
                     counter+=1
@@ -600,7 +602,7 @@ class Strava:
             except Exception as e:
                 logger.error("An Exception occured while putting to {} ".format(endpoint))
                 logger.error(e)
-                return {}
+                return None
                 
     def getActivity(self,activityId):
         endpoint = "{STRAVA}/activities/{ID}".format(STRAVA=self.STRAVA_API_URL,ID=activityId)

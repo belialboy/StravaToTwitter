@@ -39,7 +39,7 @@ def lambda_handler(event, context):
         returnable = {
             "statusCode": 301,
             "headers": {
-               "Location": "https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT}&response_type=code&scope=activity:read_all".format(CLIENT_ID=stravaClientId,REDIRECT=redirectUrl)
+               "Location": "https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT}&response_type=code&scope=activity:read_all,activity:write".format(CLIENT_ID=stravaClientId,REDIRECT=redirectUrl)
             },
             "body": ""
         }
