@@ -58,11 +58,9 @@ class Strava:
                 # Check to see if club mode is active, and if they are a member of the club
                 clubId = self._getEnv("clubId")
                 found = False
-                if len(self._getEnv("clubId")) == 0:
+                if clubId is None:
                     while True:
                         clubs = self._get(endpoint = "{STRAVA}/athlete/clubs?page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,PAGE=page,PER_PAGE=PER_PAGE))
-                        if len(clubs)==0:
-                            break
                         for club in clubs:
                             if club['id'] == int(clubId):
                                 found = True
@@ -620,7 +618,9 @@ class Strava:
         return ssm.get_parameter(Name="{PREFIX}{PARAMNAME}".format(PREFIX=os.environ['ssmPrefix'],PARAMNAME=parameterName))['Parameter']['Value']
         
     def _getEnv(self,variableName):
-        return os.environ[variableName]
+        if variableName in os.environ:
+            return os.environ[variableName]
+        return None
     
     def getRegistrationResult(self):
         return self.registrationResult
