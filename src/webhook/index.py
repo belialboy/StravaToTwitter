@@ -15,7 +15,7 @@ from botocore.exceptions import ClientError
 from strava import Strava
 import traceback
 
-debug = False
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -25,6 +25,7 @@ def lambda_handler(event, context):
     logging.info("Underpants")
     logging.info(event)
     
+    debug = False
     if "debug" in event:
         logger.setLevel(logging.DEBUG)
         debug = True
