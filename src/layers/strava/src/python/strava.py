@@ -125,7 +125,7 @@ class Strava:
                     "headers": {
                         "Content-Type": "text/html"
                     },
-                    "body": "Unauthorised registration attempt."
+                    "body": "Looking good. I've grabbed all your activity for this year, and will monitor your efforts as you upload to Strava."
                 }
             return success
         else:
