@@ -534,8 +534,8 @@ class Strava:
         return "{MIN}:{SEC:02}".format(MIN=int(minKm//1),SEC=int((minKm%1)*60))
                 
     def _get(self,endpoint):
+        counter = 0
         while True:
-            counter = 0
             try:
                 logger.setLevel(logging.DEBUG)
                 logger.debug("Checking if tokens need a refresh")
@@ -549,12 +549,16 @@ class Strava:
                 if activity.status_code == 200:
                     logger.debug("All good. Returning.")
                     return activity.json()
+                elif 400 <= activity.status_code <= 599:
+                    logger.error("Got an error returned")
+                    logger.error("code:{CODE}\nmessage:{MESSAGE}".format(CODE=activity.status_code,MESSAGE=activity.text))
+                    return {}
                 elif counter == RETRIES:
                     logger.error("Get failed even after retries")
                     logger.error("{} - {}".format(activity.status_code,activity.content))
                     return {}
                 else:
-                    logger.debug("Failed, but going to retry.")
+                    logger.debug("Failed ({COUNT}<{RETRIES}), but going to retry.".format(COUNT=counter,RETRIES=RETRIES))
                     counter+=1
                     time.sleep(PAUSE)
             except Exception as e:
@@ -563,8 +567,8 @@ class Strava:
                 return {}
     
     def _put(self,endpoint,body):
+        counter = 0
         while True:
-            counter = 0
             try:
                 logger.setLevel(logging.DEBUG)
                 logger.debug("Checking if tokens need a refresh")
@@ -581,12 +585,16 @@ class Strava:
                 if activity.status_code == 200:
                     logger.debug("All good. Returning.")
                     return activity.json()
+                elif 400 <= activity.status_code <= 599:
+                    logger.error("Got an error returned")
+                    logger.error("code:{CODE}\nmessage:{MESSAGE}".format(CODE=activity.status_code,MESSAGE=activity.text))
+                    return {}
                 elif counter == RETRIES:
                     logger.error("Get failed even after retries")
                     logger.error("{} - {}".format(activity.status_code,activity.content))
                     return {}
                 else:
-                    logger.debug("Failed, but going to retry.")
+                    logger.debug("Failed ({COUNT}<{RETRIES}), but going to retry.".format(COUNT=counter,RETRIES=RETRIES))
                     counter+=1
                     time.sleep(PAUSE)
             except Exception as e:
