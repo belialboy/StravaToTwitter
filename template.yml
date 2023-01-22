@@ -42,7 +42,7 @@ Parameters:
 
 Conditions:
   MakeSSMParams: !Equals [!Ref pSSMPrefix, ""]
-  ClubMode: !Not !Equals [!Ref pStravaClubId, ""]
+  ClubMode: !Not [!Equals [!Ref pStravaClubId, ""]]
 
 ###
 ### Template Resources
