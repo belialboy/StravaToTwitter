@@ -42,6 +42,7 @@ Parameters:
 
 Conditions:
   MakeSSMParams: !Equals [!Ref pSSMPrefix, ""]
+  ClubMode: !Not !Equals [!Ref pStravaClubId, ""]
 
 ###
 ### Template Resources
@@ -163,10 +164,15 @@ Resources:
       - !Ref StravaLayer
       Environment:
         Variables:
-          ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
-          totalsTable: !Ref Totals
-          detailsTable: !Ref Details
-          clubId: !Ref pStravaClubId
+          - !If
+            - ClubMode
+            - ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
+              totalsTable: !Ref Totals
+              detailsTable: !Ref Details
+              clubId: !Ref pStravaClubId
+            - ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
+              totalsTable: !Ref Totals
+              detailsTable: !Ref Details
       Policies:
       - Statement:
         - Sid: DynamoDBAccessTotals
@@ -318,10 +324,15 @@ Resources:
       CodeUri: src/registerwebhook/
       Environment:
         Variables:
-          WebhookLambda: !Ref WebhookASync
-          WebhookURL: !GetAtt GetAPIAddress.webhook
-          ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
-          clubId: !Ref pStravaClubId
+          - !If
+            - ClubMode
+            - WebhookLambda: !Ref WebhookASync
+              WebhookURL: !GetAtt GetAPIAddress.webhook
+              ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
+              clubId: !Ref pStravaClubId
+            - WebhookLambda: !Ref WebhookASync
+              WebhookURL: !GetAtt GetAPIAddress.webhook
+              ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
       Policies:
       - Statement:
         - Sid: LambdaAccess
