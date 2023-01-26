@@ -72,6 +72,10 @@ def lambda_handler(event, context):
     year = str(datetime.now().year)
     
     # build a string to tweet
+    time.sleep(5) # Some of the activities take a moment or two to upload their images.
+    # Get the activity from strava
+    activity = strava.getActivity(event['object_id'])
+    activity['type'] = activity['type'].replace("Virtual","")
     twitter = getTwitterClient()
     if twitter is not None:
             
