@@ -412,11 +412,11 @@ class Strava:
             elif activity_type == self.VERBTONOUN['Run']:
                 tags.append("#RunningDaze")
             else:
-                tags.append("#Another24h")
+                tags.append("🌍")
         if count_sum%100 ==0:
             # If this is their n00th activity in this category this year 
             ytdstring = ytdactivity
-            tags.append("#ActiveAllTheTime")
+            tags.append("👏")
         if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
             # If the total distance for all activities this year has just gone over a 100km stone
             ytdstring = ytdactivity
@@ -428,24 +428,34 @@ class Strava:
         if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
             # If the total duration for all activities this year has just gone over a 1day stone
             ytdstring = ytdactivity
-            tags.append("#AnotherDay")
+            tags.append("🌍")
         if ytd['count'] == 1:
             # If they've just done their first activity for the year
-            tags.append("#OffTheStartingBlock")
+            tags.append("⭐")
         if ytd['count']%10 == 0:
             #  If they've just done a multiple of 10 activities for the entire year
             ytdstring = ytdactivity
-            tags.append("#Another10")
+            tags.append("🔟")
         if latest_activity_mph > ytd_activity_mph*1.05:
             # If they were more than 5% faster than the year average for this activity
             ytdstring = ytdactivity
-            tags.append("#BackYourself")
-        if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
-            tags.append("{NUMACHIEVEMENTS} Achievements")
-            achievement_count=latest_event['achievement_count']
+            tags.append("🤩")
+        if latest_event['distance'] > ((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*1.05:
+            # If this was longer (distance) than the average by more than 5%
+            logger.info("{EVENTDISTANCE} gt {AVG}".format(EVENTDISTANCE=latest_event['distance'],AVG=((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*1.05))
+            ytdstring = ytdactivity
+            tags.append("💨")
+        if latest_event['elapsed_time'] > ((ytd['duration']-latest_event['elapsed_time'])/(ytd['count']-1))*1.05:
+            # If they spent longer than normal doing this activity
+            ytdstring = ytdactivity
+            tags.append("⏱️")
         if "pr_count" in latest_event and latest_event['pr_count'] > 0:
-            tags.append("{PRCOUNT} PBs")
+            tags.append("{PRCOUNT} 🔥")
             pr_count = latest_event['pr_count']
+        if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
+            tags.append("{NUMACHIEVEMENTS} 😤")
+            achievement_count=latest_event['achievement_count']
+        
         ## RARE MILESTONES
         
         if len(tags) == 0:
@@ -494,13 +504,13 @@ class Strava:
     
     def secsToStr(self,seconds):
         if seconds > (86400*2)-1:
-            return "{} days {}".format(math.floor(seconds/86400),time.strftime("%Hh %Mm %Ss", time.gmtime(seconds)))
+            return "{} days {}".format(math.floor(seconds/86400),time.strftime("%Hh", time.gmtime(seconds)))
         elif seconds > 86400-1:
-            return "1 day {}".format(time.strftime("%Hh %Mm %Ss", time.gmtime(seconds)))
+            return "1 day {}".format(time.strftime("%Hh%Mm", time.gmtime(seconds)))
         elif seconds > 3600-1:
-            return time.strftime("%Hh %Mm %Ss", time.gmtime(seconds))
+            return time.strftime("%Hh%Mm%Ss", time.gmtime(seconds))
         else:
-            return time.strftime("%Mm %Ss", time.gmtime(seconds))
+            return time.strftime("%Mm%Ss", time.gmtime(seconds))
             
     def secAndMetersToMPH(self, meters, seconds):
         if seconds == 0:
