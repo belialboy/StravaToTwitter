@@ -172,7 +172,7 @@ Resources:
       - !Ref StravaLayer
       Environment:
         Variables:
-          - ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
+            ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
             totalsTable: !Ref Totals
             detailsTable: !Ref Details
       Policies:
@@ -326,7 +326,7 @@ Resources:
       CodeUri: src/registerwebhook/
       Environment:
         Variables:
-          - WebhookLambda: !Ref WebhookASync
+            WebhookLambda: !Ref WebhookASync
             WebhookURL: !GetAtt GetAPIAddress.webhook
             ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
       Policies:
