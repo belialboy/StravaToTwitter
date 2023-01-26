@@ -97,6 +97,14 @@ Resources:
       Name: !Sub '{AWS::StackName}StravaClientSecret'
       Type: String
       Value: !Ref pStravaClientSecret
+  
+  StravaClubId:
+    Type: AWS::SSM::Parameter
+    Condition: ClubMode
+    Properties:
+      Name: !Sub '{AWS::StackName}StravaClubId'
+      Type: String
+      Value: !Ref pStravaClubId
       
   StravaLayer:
     Type: AWS::Serverless::LayerVersion
@@ -164,13 +172,9 @@ Resources:
       - !Ref StravaLayer
       Environment:
         Variables:
-          - 'Fn::If':
-            - MyCondition
-            - clubId: !Ref pStravaClubId
-            - !Ref AWS::NoValue
           - ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
-          - totalsTable: !Ref Totals
-          - detailsTable: !Ref Details
+            totalsTable: !Ref Totals
+            detailsTable: !Ref Details
       Policies:
       - Statement:
         - Sid: DynamoDBAccessTotals
@@ -322,13 +326,9 @@ Resources:
       CodeUri: src/registerwebhook/
       Environment:
         Variables:
-          - 'Fn::If':
-            - MyCondition
-            - clubId: !Ref pStravaClubId
-            - !Ref AWS::NoValue
           - WebhookLambda: !Ref WebhookASync
-          - WebhookURL: !GetAtt GetAPIAddress.webhook
-          - ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
+            WebhookURL: !GetAtt GetAPIAddress.webhook
+            ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
       Policies:
       - Statement:
         - Sid: LambdaAccess

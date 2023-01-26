@@ -56,7 +56,7 @@ class Strava:
             if athlete_record is None:
                 
                 # Check to see if club mode is active, and if they are a member of the club
-                clubId = self._getEnv("clubId")
+                clubId = self._getSSM("clubId")
                 logger.info("Required ClubId = '{CLUBID}'".format(CLUBID=clubId))
                 found = False
                 PER_PAGE = 30
@@ -378,7 +378,7 @@ class Strava:
         status_template = None
         
         name = "I"
-        if self._getEnv("clubId") is not None:
+        if self._getSSM("clubId") is not None:
             name = "{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
         
         ytdall = "\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION} "
