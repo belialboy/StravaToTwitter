@@ -637,8 +637,9 @@ class Strava:
         
     def _getSSM(self,parameterName):
         parameterFullName="{PREFIX}{PARAMNAME}".format(PREFIX=self._getEnv('ssmPrefix'),PARAMNAME=parameterName)
+        logger.info("Getting {PARAM} from parameter store".format(PARAM=parameterName))
         try:
-            ssm.get_parameter(Name=parameterFullName)['Parameter']['Value']
+            return ssm.get_parameter(Name=parameterFullName)['Parameter']['Value']
         except:
             logger.error("No {PARAM} set in SSM parameter storre".format(PARAM=parameterFullName))
             return None
