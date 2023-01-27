@@ -34,7 +34,11 @@ class Strava:
     def __init__(self, athleteId: int = None, auth:str = None):
         
         self.stravaClientId=self._getSSM("StravaClientId")
+        if self.stravaClientId is None:
+            return None
         self.stravaClientSecret=self._getSSM("StravaClientSecret")
+        if self.stravaClientSecret is None:
+            return None
         self.ddbTableName=self._getEnv("totalsTable")
         self.ddbDetailTableName=self._getEnv("detailsTable")
         
@@ -554,7 +558,7 @@ class Strava:
         counter = 0
         while True:
             try:
-                logger.setLevel(logging.DEBUG)
+                #logger.setLevel(logging.DEBUG)
                 logger.debug("Checking if tokens need a refresh")
                 self.refreshTokens()
                 logger.debug("Sending GET request to strava endpoint")
@@ -587,7 +591,7 @@ class Strava:
         counter = 0
         while True:
             try:
-                logger.setLevel(logging.DEBUG)
+                #logger.setLevel(logging.DEBUG)
                 logger.debug("Checking if tokens need a refresh")
                 self.refreshTokens()
                 logger.debug("Sending PUT request to strava endpoint")
@@ -632,11 +636,18 @@ class Strava:
         return(self._get(endpoint))
         
     def _getSSM(self,parameterName):
-        return ssm.get_parameter(Name="{PREFIX}{PARAMNAME}".format(PREFIX=os.environ['ssmPrefix'],PARAMNAME=parameterName))['Parameter']['Value']
+        parameterFullName="{PREFIX}{PARAMNAME}".format(PREFIX=self._getEnv('ssmPrefix'),PARAMNAME=parameterName)
+        try:
+            ssm.get_parameter(Name=parameterFullName)['Parameter']['Value']
+        except:
+            logger.error("No {PARAM} set in SSM parameter storre".format(PARAM=parameterFullName))
+            return None
+
         
     def _getEnv(self,variableName):
         if variableName in os.environ:
             return os.environ[variableName]
+        logger.error("No {VAR} set in lambda environment".format(VAR=variableName))
         return None
     
     def getRegistrationResult(self):
