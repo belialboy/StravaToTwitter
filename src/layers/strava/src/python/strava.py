@@ -347,7 +347,7 @@ class Strava:
     
         wrt_sec = ((event['average_heartrate']*(event['elapsed_time']/60))/200)*3600
         
-        return self.secsToStr(max(int(wrt_sec),4*24*60*60))
+        return self.secsToStr(min(int(wrt_sec),4*24*60*60))
         
     def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         
