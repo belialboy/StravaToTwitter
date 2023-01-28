@@ -69,10 +69,15 @@ class Strava:
                     while True:
                         logger.debug("Looking on page {PAGE} for athletes clubs".format(PAGE=page))
                         clubs = self._get(endpoint = "{STRAVA}/athlete/clubs?page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,PAGE=page,PER_PAGE=PER_PAGE))
+                        if len(clubs)==0:
+                            break
+                        logger.info(clubs)
                         for club in clubs:
                             if club['id'] == int(clubId):
                                 found = True
                                 break
+                        if found:
+                            break
                         page+=1
                     if found == False:
                         logger.error("Athlete is not a member of the Club! Returning 401.")
