@@ -19,6 +19,8 @@ debug = False
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+pGooglePermissions
+
 def lambda_handler(event, context):
 
     logging.info("Underpants")

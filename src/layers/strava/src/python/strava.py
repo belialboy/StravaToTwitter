@@ -7,6 +7,7 @@ import datetime
 import math
 import os
 import traceback
+from . import utils
 
 
 logger = logging.getLogger()
@@ -18,7 +19,7 @@ logger.setLevel(logging.INFO)
 PAUSE = 1 #second
 RETRIES = 5
 
-ssm = boto3.client("ssm")
+
 
 class Strava:
     STRAVA_API_URL = "https://www.strava.com/api/v3"
@@ -33,14 +34,14 @@ class Strava:
     
     def __init__(self, athleteId: int = None, auth:str = None):
         
-        self.stravaClientId=self._getSSM("StravaClientId")
+        self.stravaClientId=utils.getSSM("StravaClientId")
         if self.stravaClientId is None:
             return None
-        self.stravaClientSecret=self._getSSM("StravaClientSecret")
+        self.stravaClientSecret=utils.getSSM("StravaClientSecret")
         if self.stravaClientSecret is None:
             return None
-        self.ddbTableName=self._getEnv("totalsTable")
-        self.ddbDetailTableName=self._getEnv("detailsTable")
+        self.ddbTableName=utils.getEnv("totalsTable")
+        self.ddbDetailTableName=utils.getEnv("detailsTable")
         
         if auth is not None:
             self.registrationResult = self._newAthlete(auth)
@@ -60,7 +61,7 @@ class Strava:
             if athlete_record is None:
                 
                 # Check to see if club mode is active, and if they are a member of the club
-                clubId = self._getSSM("StravaClubId")
+                clubId = utils.getSSM("StravaClubId")
                 logger.info("Required ClubId = '{CLUBID}'".format(CLUBID=clubId))
                 found = False
                 PER_PAGE = 30
@@ -329,9 +330,9 @@ class Strava:
             TYPE=activity_type,
             TOTALDISTANCEMILES=ytd['distance']/1609,
             TOTALDISTANCEKM=ytd['distance']/1000,
-            TOTALDURATION=self.secsToStr(ytd['duration']),
+            TOTALDURATION=utils.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
-            RECOVERYTIME=self.getRecoveryTime(latest_event)
+            RECOVERYTIME=utils.getRecoveryTime(latest_event)
             )
         
         if "description" in latest_event and latest_event['description'] is not None:
@@ -347,7 +348,7 @@ class Strava:
     
         wrt_sec = ((event['average_heartrate']*(event['elapsed_time']/60))/200)*3600
         
-        return self.secsToStr(min(int(wrt_sec),4*24*60*60))
+        return utils.secsToStr(min(int(wrt_sec),4*24*60*60))
         
     def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         
@@ -364,9 +365,9 @@ class Strava:
             activity_type =  self.VERBTONOUN[activity_type]
         strava_athlete = self.getCurrentAthlete()
         
-        latest_activity_mph = self.secAndMetersToMPH(latest_event['distance'],latest_event['elapsed_time'])
-        ytd_activity_mph = self.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event['elapsed_time'])
-        latest_activity_kmph = self.secAndMetersToKmPH(latest_event['distance'],latest_event['elapsed_time'])
+        latest_activity_mph = utils.secAndMetersToMPH(latest_event['distance'],latest_event['elapsed_time'])
+        ytd_activity_mph = utils.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event['elapsed_time'])
+        latest_activity_kmph = utils.secAndMetersToKmPH(latest_event['distance'],latest_event['elapsed_time'])
         
         achievement_count = 0
         pr_count = 0
@@ -382,7 +383,7 @@ class Strava:
         status_template = None
         
         name = "I"
-        if self._getSSM("StravaClubId") is not None:
+        if utils.getSSM("StravaClubId") is not None:
             name = "{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
         
         ytdall = "\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION} "
@@ -484,13 +485,13 @@ class Strava:
             TYPE=activity_type,
             DISTANCEMILES=latest_event['distance']/1609,
             DISTANCEKM=latest_event['distance']/1000,
-            DURATION=self.secsToStr(latest_event['elapsed_time']),
+            DURATION=utils.secsToStr(latest_event['elapsed_time']),
             TOTALDISTANCEMILES=ytd['distance']/1609,
             TOTALDISTANCEKM=ytd['distance']/1000,
-            TOTALDURATION=self.secsToStr(ytd['duration']),
+            TOTALDURATION=utils.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
             ACTIVITYURL="https://www.strava.com/activities/{}".format(latest_event['id']),
-            ALLACTIVITYDURATION=self.secsToStr(duration_sum),
+            ALLACTIVITYDURATION=utils.secsToStr(duration_sum),
             ALLACTIVITYDISTANCEKM=distance_sum/1000,
             ALLACTIVITYDISTANCEMILES=distance_sum/1609,
             ALLACTIVITYCOUNT=count_sum,
@@ -498,61 +499,15 @@ class Strava:
             ACTIVITYKMPH=latest_activity_kmph,
             NUMACHIEVEMENTS=achievement_count,
             PRCOUNT=pr_count,
-            MINUTEMILES=self._getMinMiles(latest_event['elapsed_time'],latest_event['distance']),
-            MINUTEKM=self._getMinKm(latest_event['elapsed_time'],latest_event['distance'])
+            MINUTEMILES=utils.getMinMiles(latest_event['elapsed_time'],latest_event['distance']),
+            MINUTEKM=utils.getMinKm(latest_event['elapsed_time'],latest_event['distance'])
             )
 
         logger.info("Returning Twitter String: '{STRING}'".format(STRING=status))
         
         return status
     
-    def secsToStr(self,seconds):
-        if seconds > (86400*2)-1:
-            return "{} days {}".format(math.floor(seconds/86400),time.strftime("%Hh", time.gmtime(seconds)))
-        elif seconds > 86400-1:
-            return "1 day {}".format(time.strftime("%Hh%Mm", time.gmtime(seconds)))
-        elif seconds > 3600-1:
-            return time.strftime("%Hh%Mm%Ss", time.gmtime(seconds))
-        else:
-            return time.strftime("%Mm%Ss", time.gmtime(seconds))
-            
-    def secAndMetersToMPH(self, meters, seconds):
-        if seconds == 0:
-            return float('{:.1f}'.format(0))
-            
-        miles = meters/1609
-        hours = seconds/3600
-        
-        mph = miles/hours
-        
-        return float('{:.1f}'.format(mph))
-        
-    def secAndMetersToKmPH(self, meters, seconds):
-        if seconds == 0:
-            return float('{:.1f}'.format(0))
-        
-        km = meters/1000
-        hours = seconds/3600
-        
-        kmph = km/hours
-        
-        return float('{:.1f}'.format(kmph))
-        
-    def _getMinMiles(self, seconds, meters):
-        if seconds == 0 or meters == 0:
-            return "0:00"
-        
-        minMile = 26.8224 / (meters/seconds)
-        
-        return "{MIN}:{SEC:02}".format(MIN=int(minMile//1),SEC=int((minMile%1)*60))
-        
-    def _getMinKm(self, seconds, meters):
-        if seconds == 0 or meters == 0:
-            return "0:00"
-            
-        minKm = ((seconds/60)/(meters/1000))
-        
-        return "{MIN}:{SEC:02}".format(MIN=int(minKm//1),SEC=int((minKm%1)*60))
+
                 
     def _get(self,endpoint):
         counter = 0
@@ -635,21 +590,5 @@ class Strava:
         endpoint = "{STRAVA}/athletes/{ID}/stats".format(STRAVA=self.STRAVA_API_URL,ID=athleteId)
         return(self._get(endpoint))
         
-    def _getSSM(self,parameterName):
-        parameterFullName="{PREFIX}{PARAMNAME}".format(PREFIX=self._getEnv('ssmPrefix'),PARAMNAME=parameterName)
-        logger.info("Getting {PARAM} from parameter store".format(PARAM=parameterName))
-        try:
-            return ssm.get_parameter(Name=parameterFullName)['Parameter']['Value']
-        except:
-            logger.error("No {PARAM} set in SSM parameter storre".format(PARAM=parameterFullName))
-            return None
-
-        
-    def _getEnv(self,variableName):
-        if variableName in os.environ:
-            return os.environ[variableName]
-        logger.error("No {VAR} set in lambda environment".format(VAR=variableName))
-        return None
-    
     def getRegistrationResult(self):
         return self.registrationResult
