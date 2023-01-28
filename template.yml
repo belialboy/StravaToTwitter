@@ -203,13 +203,13 @@ Resources:
           - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*'
           - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
           
-  MonthlyPostLambda:
+  DailyPostLambda:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.9
       Timeout: 600
       Handler: index.lambda_handler
-      CodeUri: src/monthly/
+      CodeUri: src/daily/
       Layers:
       - !Ref StravaLayer
       Environment:
@@ -238,9 +238,9 @@ Resources:
         Schedule:
           Type: Schedule
           Properties:
-            Schedule: 'cron(0 8 1 * ? *)'
-            Name: ScheduleForStravaMonthly
-            Description: Executes the Strava Monthly catalog function every month
+            Schedule: 'cron(59 23 * * ? *)'
+            Name: ScheduleForStravaEOD
+            Description: Executes the Strava Daily catalog function
             Enabled: true
 
   Totals:

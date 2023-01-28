@@ -14,8 +14,7 @@ from io import BytesIO
 from botocore.exceptions import ClientError
 from strava import Strava
 import traceback
-
-
+import utils
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -76,7 +75,7 @@ def lambda_handler(event, context):
     # Get the activity from strava
     activity = strava.getActivity(event['object_id'])
     activity['type'] = activity['type'].replace("Virtual","")
-    twitter = getTwitterClient()
+    twitter = utils.getTwitterClient()
     if twitter is not None:
             
         logger.info("Getting Ready to make a tweet. How exciting!")
@@ -129,13 +128,4 @@ def lambda_handler(event, context):
 
     logging.info("Profit!")
     
-def getTwitterClient():
-    if "ssmPrefix" in os.environ:
-        ssm = boto3.client("ssm")
-        client = Twython(ssm.get_parameter(Name="{}TwitterConsumerKey".format(os.environ['ssmPrefix']))['Parameter']['Value'], 
-            ssm.get_parameter(Name="{}TwitterConsumerSecret".format(os.environ['ssmPrefix']))['Parameter']['Value'],
-            ssm.get_parameter(Name="{}TwitterAccessTokenKey".format(os.environ['ssmPrefix']))['Parameter']['Value'], 
-            ssm.get_parameter(Name="{}TwitterAccessTokenSecret".format(os.environ['ssmPrefix']))['Parameter']['Value'])
-        return client
-    else:
-        print("No twitter credentials found, so passing")
+
