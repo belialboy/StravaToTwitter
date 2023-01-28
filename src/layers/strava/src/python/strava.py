@@ -403,18 +403,18 @@ class Strava:
         if math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100km stone
             ytdstring = ytdall
-            tags.append("#SelfPropelledKilos")
+            tags.append("🙌")
         if math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100mile stone
             ytdstring = ytdall
-            tags.append("#SelfPropelledMiles")
+            tags.append("🙌")
         if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['elapsed_time'])/86400):
             # If the most recent activity puts the sum of all the activities' duration in that category for the year over a 1day stone
             ytdstring = ytdall
             if activity_type == self.VERBTONOUN['Ride']:
-                tags.append("#SaddleSore")
+                tags.append("🚴")
             elif activity_type == self.VERBTONOUN['Run']:
-                tags.append("#RunningDaze")
+                tags.append("🏃")
             else:
                 tags.append("🌍")
         if count_sum%100 ==0:
@@ -424,11 +424,11 @@ class Strava:
         if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
             # If the total distance for all activities this year has just gone over a 100km stone
             ytdstring = ytdactivity
-            tags.append("#KiloWhat")
+            tags.append("🔥")
         if math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
             # If the total distance for all activities this year has just gone over a 100mile stone
             ytdstring = ytdactivity
-            tags.append("#MilesAndMiles")
+            tags.append("📏")
         if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
             # If the total duration for all activities this year has just gone over a 1day stone
             ytdstring = ytdactivity
@@ -454,10 +454,10 @@ class Strava:
             ytdstring = ytdactivity
             tags.append("⏱️")
         if "pr_count" in latest_event and latest_event['pr_count'] > 0:
-            tags.append("{PRCOUNT} x 🔥")
+            tags.append("{PRCOUNT}x🔥")
             pr_count = latest_event['pr_count']
         if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
-            tags.append("{NUMACHIEVEMENTS} x 😤")
+            tags.append("{NUMACHIEVEMENTS}x😤")
             achievement_count=latest_event['achievement_count']
         
         ## RARE MILESTONES
@@ -474,7 +474,7 @@ class Strava:
         
         local_start = datetime.datetime.strptime(latest_event['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
         if (activity_type == self.VERBTONOUN['Run'] or activity_type == self.VERBTONOUN['Walk']) and ("parkrun" in latest_event['name'].lower() or (4950<=latest_event['distance']<=5050 and local_start.weekday()==5 and 8 <=local_start.hour <= 10)):
-            tags.append("@parkrun")
+            tags.append("#parkrun")
         
         tag_string = ' '.join(tags)
         status_template = activity+ytdstring+tag_string
