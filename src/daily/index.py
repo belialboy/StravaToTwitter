@@ -68,9 +68,9 @@ def lambda_handler(event, context):
                 logger.info("Runner {} has not run this year so far.".format(Id))
         else:
             logger.info("New athlete")
-            if year in athlete_record and "Run" in athlete_record[year] and "distance" in athlete_record[year]['Run']:
+            if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
                 logger.info("Adding YTD for runnner {}".format(Id))
-                runningYTD = athlete_record[year]['Run']['distance']/1609.34
+                runningYTD = body[year]['Run']['distance']/1609.34
                 strava_athlete = strava.getCurrentAthlete()
                 newRow=[Id,"{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])]
                 nonMonths=[0] * month-1
