@@ -13,7 +13,7 @@ import math
 from io import BytesIO
 from botocore.exceptions import ClientError
 from strava import Strava
-from strava import utils
+from strava import Utils
 import gspread
 
 debug = False
@@ -30,11 +30,11 @@ def lambda_handler(event, context):
     month = datetime.now().month
 
     # Get some google connectivity
-    googleCredentials = json.loads(utils.getSSM("GooglePermissions"))
+    googleCredentials = json.loads(Utils.getSSM("GooglePermissions"))
     gc = gspread.service_account_from_dict(googleCredentials)
     
     # Open the spreadsheet
-    googleSheetName=utils.getSSM("GoogleSheetName")
+    googleSheetName=Utils.getSSM("GoogleSheetName")
     sheet = gc.open(googleSheetName.split(".")[0])
     
     # Open the worksheet in the spreadsheet
@@ -75,22 +75,6 @@ def lambda_handler(event, context):
                 logger.info("Athlete {} is new, but has not done any running this year".format(Id))
 
     logging.info("Profit!")
-    
-def getTwitterClient():
-    if "ssmPrefix" in os.environ:
-        ssm = boto3.client("ssm")
-        credentials={}
-        credentials['twitterConsumerKey'] = ssm.get_parameter(Name="{}TwitterConsumerKey".format(os.environ['ssmPrefix']))['Parameter']['Value']
-        credentials['twitterConsumerSecret'] = ssm.get_parameter(Name="{}TwitterConsumerSecret".format(os.environ['ssmPrefix']))['Parameter']['Value']
-        credentials['twitterAccessTokenKey'] = ssm.get_parameter(Name="{}TwitterAccessTokenKey".format(os.environ['ssmPrefix']))['Parameter']['Value']
-        credentials['twitterAccessTokenSecret'] = ssm.get_parameter(Name="{}TwitterAccessTokenSecret".format(os.environ['ssmPrefix']))['Parameter']['Value']
-        client = Twython(credentials["twitterConsumerKey"], 
-            credentials["twitterConsumerSecret"],
-            credentials["twitterAccessTokenKey"], 
-            credentials["twitterAccessTokenSecret"])
-        return client
-    else:
-        print("No twitter credentials found, so passing")
 
 def getIds():
     ddb = boto3.resource('dynamodb')

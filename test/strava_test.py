@@ -2,13 +2,15 @@ import unittest
 import json
 
 from src.layers.strava.src.python.strava import Strava
-from src.layers.utils.src.python.utils import Utils
+from src.layers.strava.src.python.strava import Utils
+
+
 from unittest import mock
 from unittest.mock import patch
 
 class TestStrava(unittest.TestCase):
-  @patch('src.layers.utils.src.python.utils.Utils.getEnv')
-  @patch('src.layers.utils.src.python.utils.Utils.getSSM')
+  @patch('src.layers.strava.src.python.strava.Utils.getEnv')
+  @patch('src.layers.strava.src.python.strava.Utils.getSSM')
   @patch('src.layers.strava.src.python.strava.Strava._getAthleteFromDDB')
   def test_normal_constructor(self,getAthleteFromDDB,getSSM,getEnv):
     tokens={"expires_at":1234567890,"access_token":"abcdef1234567890","refresh_token":"0987654321fedcba"}
@@ -23,8 +25,8 @@ class TestStrava(unittest.TestCase):
     self.assertEqual(strava.ddbTableName,"Dynamo")
     self.assertEqual(strava.athleteId,1234567)
 
-  @patch('src.layers.utils.src.python.utils.Utils.getEnv')
-  @patch('src.layers.utils.src.python.utils.Utils.getSSM')
+  @patch('src.layers.strava.src.python.strava.Utils.getEnv')
+  @patch('src.layers.strava.src.python.strava.Utils.getSSM')
   @patch('src.layers.strava.src.python.strava.Strava._newAthlete')
   def test_new_constructor(self,newAthlete,getSSM,getEnv):
     getSSM.return_value = "DEADBEEF"
@@ -36,8 +38,8 @@ class TestStrava(unittest.TestCase):
     self.assertEqual(strava.stravaClientSecret,"DEADBEEF")
     self.assertEqual(strava.ddbTableName,"Dynamo")
 
-  @patch('src.layers.utils.src.python.utils.Utils.getEnv')
-  @patch('src.layers.utils.src.python.utils.Utils.getSSM')
+  @patch('src.layers.strava.src.python.strava.Utils.getEnv')
+  @patch('src.layers.strava.src.python.strava.Utils.getSSM')
   def test_secsToStr(self,getSSM,getEnv):
     getSSM.return_value = "DEADBEEF"
     getEnv.return_value = "1234"
@@ -54,8 +56,8 @@ class TestStrava(unittest.TestCase):
       self.assertEqual(Utils.secsToStr(86401),"1 day 00h00m")
       self.assertEqual(Utils.secsToStr(122400),"1 day 10h00m")
   
-  @patch('src.layers.utils.src.python.utils.Utils.getEnv')
-  @patch('src.layers.utils.src.python.utils.Utils.getSSM')
+  @patch('src.layers.strava.src.python.strava.Utils.getEnv')
+  @patch('src.layers.strava.src.python.strava.Utils.getSSM')
   @patch('src.layers.strava.src.python.strava.Strava._getAthleteFromDDB')
   @patch('src.layers.strava.src.python.strava.Strava.getCurrentAthlete')
   def test_makeTwitterStatus(self,getCurrentAthlete,getAthleteFromDDB,getSSM,getEnv):
@@ -70,8 +72,8 @@ class TestStrava(unittest.TestCase):
     latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
     self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h00m00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h00m 🙌 🔥 🌍 🔟 🤩 💨 ⏱️")
   
-  @patch('src.layers.utils.src.python.utils.Utils.getEnv')
-  @patch('src.layers.utils.src.python.utils.Utils.getSSM')
+  @patch('src.layers.strava.src.python.strava.Utils.getEnv')
+  @patch('src.layers.strava.src.python.strava.Utils.getSSM')
   @patch('src.layers.strava.src.python.strava.Strava._getAthleteFromDDB')
   @patch('src.layers.strava.src.python.strava.Strava.getCurrentAthlete')
   def test_makeTwitterStatusWithZwift(self,getCurrentAthlete,getAthleteFromDDB,getSSM,getEnv):
@@ -86,8 +88,8 @@ class TestStrava(unittest.TestCase):
     latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "device_name": "Zwift", "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
     self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h00m00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h00m 🙌 🔥 🌍 🔟 🤩 💨 ⏱️ #RideOn @GoZwift")
   
-  @patch('src.layers.utils.src.python.utils.Utils.getEnv')
-  @patch('src.layers.utils.src.python.utils.Utils.getSSM')
+  @patch('src.layers.strava.src.python.strava.Utils.getEnv')
+  @patch('src.layers.strava.src.python.strava.Utils.getSSM')
   def test_recoveryTime(self,getSSM,getEnv):
     getSSM.return_value = "DEADBEEF"
     getEnv.return_value = "1234"
