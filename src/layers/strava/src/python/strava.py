@@ -7,8 +7,7 @@ import datetime
 import math
 import os
 import traceback
-from . import utils
-
+from .utils import Utils
 
 logger = logging.getLogger()
 
@@ -34,14 +33,14 @@ class Strava:
     
     def __init__(self, athleteId: int = None, auth:str = None):
         
-        self.stravaClientId=utils.getSSM("StravaClientId")
+        self.stravaClientId=Utils.getSSM("StravaClientId")
         if self.stravaClientId is None:
             return None
-        self.stravaClientSecret=utils.getSSM("StravaClientSecret")
+        self.stravaClientSecret=Utils.getSSM("StravaClientSecret")
         if self.stravaClientSecret is None:
             return None
-        self.ddbTableName=utils.getEnv("totalsTable")
-        self.ddbDetailTableName=utils.getEnv("detailsTable")
+        self.ddbTableName=Utils.getEnv("totalsTable")
+        self.ddbDetailTableName=Utils.getEnv("detailsTable")
         
         if auth is not None:
             self.registrationResult = self._newAthlete(auth)
@@ -61,7 +60,7 @@ class Strava:
             if athlete_record is None:
                 
                 # Check to see if club mode is active, and if they are a member of the club
-                clubId = utils.getSSM("StravaClubId")
+                clubId = Utils.getSSM("StravaClubId")
                 logger.info("Required ClubId = '{CLUBID}'".format(CLUBID=clubId))
                 found = False
                 PER_PAGE = 30
@@ -330,9 +329,9 @@ class Strava:
             TYPE=activity_type,
             TOTALDISTANCEMILES=ytd['distance']/1609,
             TOTALDISTANCEKM=ytd['distance']/1000,
-            TOTALDURATION=utils.secsToStr(ytd['duration']),
+            TOTALDURATION=Utils.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
-            RECOVERYTIME=utils.getRecoveryTime(latest_event)
+            RECOVERYTIME=self.getRecoveryTime(latest_event)
             )
         
         if "description" in latest_event and latest_event['description'] is not None:
@@ -348,7 +347,7 @@ class Strava:
     
         wrt_sec = ((event['average_heartrate']*(event['elapsed_time']/60))/200)*3600
         
-        return utils.secsToStr(min(int(wrt_sec),4*24*60*60))
+        return Utils.secsToStr(min(int(wrt_sec),4*24*60*60))
         
     def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         
@@ -365,9 +364,9 @@ class Strava:
             activity_type =  self.VERBTONOUN[activity_type]
         strava_athlete = self.getCurrentAthlete()
         
-        latest_activity_mph = utils.secAndMetersToMPH(latest_event['distance'],latest_event['elapsed_time'])
-        ytd_activity_mph = utils.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event['elapsed_time'])
-        latest_activity_kmph = utils.secAndMetersToKmPH(latest_event['distance'],latest_event['elapsed_time'])
+        latest_activity_mph = Utils.secAndMetersToMPH(latest_event['distance'],latest_event['elapsed_time'])
+        ytd_activity_mph = Utils.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event['elapsed_time'])
+        latest_activity_kmph = Utils.secAndMetersToKmPH(latest_event['distance'],latest_event['elapsed_time'])
         
         achievement_count = 0
         pr_count = 0
@@ -383,7 +382,7 @@ class Strava:
         status_template = None
         
         name = "I"
-        if utils.getSSM("StravaClubId") is not None:
+        if Utils.getSSM("StravaClubId") is not None:
             name = "{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
         
         ytdall = "\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION} "
@@ -485,13 +484,13 @@ class Strava:
             TYPE=activity_type,
             DISTANCEMILES=latest_event['distance']/1609,
             DISTANCEKM=latest_event['distance']/1000,
-            DURATION=utils.secsToStr(latest_event['elapsed_time']),
+            DURATION=Utils.secsToStr(latest_event['elapsed_time']),
             TOTALDISTANCEMILES=ytd['distance']/1609,
             TOTALDISTANCEKM=ytd['distance']/1000,
-            TOTALDURATION=utils.secsToStr(ytd['duration']),
+            TOTALDURATION=Utils.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
             ACTIVITYURL="https://www.strava.com/activities/{}".format(latest_event['id']),
-            ALLACTIVITYDURATION=utils.secsToStr(duration_sum),
+            ALLACTIVITYDURATION=Utils.secsToStr(duration_sum),
             ALLACTIVITYDISTANCEKM=distance_sum/1000,
             ALLACTIVITYDISTANCEMILES=distance_sum/1609,
             ALLACTIVITYCOUNT=count_sum,
@@ -499,8 +498,8 @@ class Strava:
             ACTIVITYKMPH=latest_activity_kmph,
             NUMACHIEVEMENTS=achievement_count,
             PRCOUNT=pr_count,
-            MINUTEMILES=utils.getMinMiles(latest_event['elapsed_time'],latest_event['distance']),
-            MINUTEKM=utils.getMinKm(latest_event['elapsed_time'],latest_event['distance'])
+            MINUTEMILES=Utils.getMinMiles(latest_event['elapsed_time'],latest_event['distance']),
+            MINUTEKM=Utils.getMinKm(latest_event['elapsed_time'],latest_event['distance'])
             )
 
         logger.info("Returning Twitter String: '{STRING}'".format(STRING=status))

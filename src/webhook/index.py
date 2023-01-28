@@ -14,7 +14,7 @@ from io import BytesIO
 from botocore.exceptions import ClientError
 from strava import Strava
 import traceback
-import utils
+from utils import Utils
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -75,7 +75,7 @@ def lambda_handler(event, context):
     # Get the activity from strava
     activity = strava.getActivity(event['object_id'])
     activity['type'] = activity['type'].replace("Virtual","")
-    twitter = utils.getTwitterClient()
+    twitter = Utils.getTwitterClient()
     if twitter is not None:
             
         logger.info("Getting Ready to make a tweet. How exciting!")
