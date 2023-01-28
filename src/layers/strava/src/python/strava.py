@@ -454,10 +454,10 @@ class Strava:
             ytdstring = ytdactivity
             tags.append("⏱️")
         if "pr_count" in latest_event and latest_event['pr_count'] > 0:
-            tags.append("{PRCOUNT} 🔥")
+            tags.append("{PRCOUNT} x 🔥")
             pr_count = latest_event['pr_count']
         if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
-            tags.append("{NUMACHIEVEMENTS} 😤")
+            tags.append("{NUMACHIEVEMENTS} x 😤")
             achievement_count=latest_event['achievement_count']
         
         ## RARE MILESTONES
