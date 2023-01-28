@@ -113,6 +113,13 @@ Resources:
       CompatibleRuntimes:
         - python3.9
 
+  UtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: src/layers/utils/src
+      CompatibleRuntimes:
+        - python3.9
+        
   ProxyLambdaFunction:
     DependsOn: 
     - Totals
@@ -170,6 +177,7 @@ Resources:
       CodeUri: src/webhook/
       Layers:
       - !Ref StravaLayer
+      - !Ref UtilsLayer
       Environment:
         Variables:
             ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
@@ -212,6 +220,7 @@ Resources:
       CodeUri: src/daily/
       Layers:
       - !Ref StravaLayer
+      - !Ref UtilsLayer
       Environment:
         Variables:
           ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
