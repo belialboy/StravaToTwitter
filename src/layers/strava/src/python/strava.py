@@ -7,7 +7,6 @@ import datetime
 import math
 import os
 import traceback
-from twython import Twython
 
 logger = logging.getLogger()
 
@@ -665,16 +664,3 @@ class Utils(object):
         
         return "{MIN}:{SEC:02}".format(MIN=int(minKm//1),SEC=int((minKm%1)*60))
     
-    @staticmethod
-    def getTwitterClient():
-        if Utils.getEnv("ssmPrefix") is not None:
-            client = Twython(
-                        Utils.getSSM("TwitterConsumerKey"), 
-                        Utils.getSSM("TwitterConsumerSecret"),
-                        Utils.getSSM("TwitterAccessTokenKey"), 
-                        Utils.getSSM("TwitterAccessTokenSecret"))
-            return client
-        else:
-            print("No twitter credentials found, so passing")
-        return None
-

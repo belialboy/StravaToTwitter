@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 # pylint: disable=fixme, import-error
+from twython import Twython
 from datetime import datetime
 import time
 import os
@@ -128,3 +129,14 @@ def lambda_handler(event, context):
     logging.info("Profit!")
     
 
+def getTwitterClient():
+    if Utils.getEnv("ssmPrefix") is not None:
+        client = Twython(
+                    Utils.getSSM("TwitterConsumerKey"), 
+                    Utils.getSSM("TwitterConsumerSecret"),
+                    Utils.getSSM("TwitterAccessTokenKey"), 
+                    Utils.getSSM("TwitterAccessTokenSecret"))
+        return client
+    else:
+        print("No twitter credentials found, so passing")
+    return None
