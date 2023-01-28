@@ -48,18 +48,24 @@ def lambda_handler(event, context):
     
     for Id in AthleteIds:
     
+        logger.info("Working on {}".format(Id))
         strava = Strava(athleteId=Id)
         athlete_record = strava._getAthleteFromDDB()
-        # TODO: snag only the year in question details
+        if "body" not in athlete_record:
+            logger.info("No running so far")
+            continue
+        body=json.loads(athlete_record['body'])
+        logger.info(body)
+
         if Id in listOfIds:
             logger.info("Found existing athlete")
-            if year in athlete_record and "Run" in athlete_record[year] and "distance" in athlete_record[year]['Run']:
+            if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
                 logger.info("Updating YTD for runnner {}".format(Id))
-                runningYTD = athlete_record[year]['Run']['distance']/1609.34
+                runningYTD = body[year]['Run']['distance']/1609.34
                 cell = worksheet.find(Id, in_column=1)
                 worksheet.update_cell(cell.row,month+2 , runningYTD)
             else:
-                logger.info("Runner {} has not run this year so far".format(Id))
+                logger.info("Runner {} has not run this year so far.".format(Id))
         else:
             logger.info("New athlete")
             if year in athlete_record and "Run" in athlete_record[year] and "distance" in athlete_record[year]['Run']:
@@ -72,7 +78,8 @@ def lambda_handler(event, context):
                 newRow.append(runningYTD)
                 worksheet.insert_row(newRow)
             else:
-                logger.info("Athlete {} is new, but has not done any running this year".format(Id))
+                logger.info("Athlete {} is new, but has not done any running this year.".format(Id))
+
 
     logging.info("Profit!")
 
