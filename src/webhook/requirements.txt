@@ -1,2 +1,1 @@
 requests==2.27.1
-twython==3.9.1

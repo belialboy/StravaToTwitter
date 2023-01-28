@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import json
 # pylint: disable=fixme, import-error
-from twython import Twython
 from datetime import datetime
 import time
 import os
