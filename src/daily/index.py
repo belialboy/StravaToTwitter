@@ -42,6 +42,7 @@ def lambda_handler(event, context):
     
     # List all the athlete Ids that are currently in the sheet
     listOfIds =  worksheet.col_values(1)
+    listOfNames = worksheet.col_values(2)
     
     # List all the athletes that we currently know about
     AthleteIds = getIds()
@@ -59,26 +60,46 @@ def lambda_handler(event, context):
 
         if Id in listOfIds:
             logger.info("Found existing athlete")
+            runningYTD=0.0
             if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
                 logger.info("Updating YTD for runnner {}".format(Id))
                 runningYTD = body[year]['Run']['distance']/1609.34
-                cell = worksheet.find(Id, in_column=1)
-                worksheet.update_cell(cell.row,month+2 , runningYTD)
+               
             else:
                 logger.info("Runner {} has not run this year so far.".format(Id))
+            cell = worksheet.find(Id, in_column=1)
+            worksheet.update_cell(cell.row,month+2 , runningYTD)
         else:
             logger.info("New athlete")
-            if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
-                logger.info("Adding YTD for runnner {}".format(Id))
-                runningYTD = body[year]['Run']['distance']/1609.34
-                strava_athlete = strava.getCurrentAthlete()
-                newRow=[Id,"{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])]
-                nonMonths=[0] * month-1
-                newRow.extend(nonMonths)
-                newRow.append(runningYTD)
-                worksheet.insert_row(newRow)
+            strava_athlete = strava.getCurrentAthlete()
+            fullName="{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
+            if fullName in listOfNames:
+                cell = worksheet.find(fullName, in_column=2)
+                worksheet.update_cell(cell.row,1, Id)
+                runningYTD=0.0
+                if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
+                    logger.info("Updating YTD for runnner {}".format(Id))
+                    runningYTD = body[year]['Run']['distance']/1609.34
+                   
+                else:
+                    logger.info("Runner {} has not run this year so far.".format(Id))
+                worksheet.update_cell(cell.row,month+2 , runningYTD)
             else:
-                logger.info("Athlete {} is new, but has not done any running this year.".format(Id))
+                newRow=[Id,fullName]
+                if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
+                    logger.info("Adding YTD for runnner {}".format(Id))
+                    runningYTD = body[year]['Run']['distance']/1609.34
+                    nonMonths=[0] * (month-1)
+                    newRow.extend(nonMonths)
+                    newRow.append(runningYTD)
+                else:
+                    logger.info("Athlete {} is new, but has not done any running this year.".format(Id))
+                    strava_athlete = strava.getCurrentAthlete()
+                    newRow=[Id,"{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])]
+                    nonMonths=[0] * (month)
+                    newRow.extend(nonMonths)
+                worksheet.insert_row(newRow,index=len(listOfNames)+1)
+            listOfNames.append(fullName)
 
 
     logging.info("Profit!")

@@ -13,8 +13,8 @@ import math
 from io import BytesIO
 from botocore.exceptions import ClientError
 from strava import Strava
+from strava import Utils
 import traceback
-from utils import Utils
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
