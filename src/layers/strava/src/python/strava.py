@@ -605,8 +605,9 @@ class Utils(object):
         logger.info("Getting {PARAM} from parameter store".format(PARAM=parameterName))
         try:
             return ssm.get_parameter(Name=parameterFullName)['Parameter']['Value']
-        except:
-            logger.error("No {PARAM} set in SSM parameter storre".format(PARAM=parameterFullName))
+        except Exception as e:
+            logger.error(e)
+            logger.error("No {PARAM} set in SSM parameter store".format(PARAM=parameterFullName))
             return None
     
     @staticmethod
