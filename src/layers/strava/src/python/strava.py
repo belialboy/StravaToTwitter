@@ -398,6 +398,8 @@ class Strava:
             activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}"
         elif activity_type == self.VERBTONOUN['Run']:
             activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {MINUTEMILES}min/mile / {MINUTEKM}min/km - {ACTIVITYURL}"
+        elif activity_type == "Yoga":
+            activity = "{NAME} did {TYPE} for {DURATION} - {ACTIVITYURL}"
         
         tags = []
         
