@@ -75,7 +75,7 @@ def lambda_handler(event, context):
     # Get the activity from strava
     activity = strava.getActivity(event['object_id'])
     activity['type'] = activity['type'].replace("Virtual","")
-    twitter = Utils.getTwitterClient()
+    twitter = getTwitterClient()
     if twitter is not None:
             
         logger.info("Getting Ready to make a tweet. How exciting!")
