@@ -310,21 +310,14 @@ class Strava:
         logger.info("Making Strava Description Update String")
         
         ytd = athlete_year_stats[latest_event['type']]
-        
-        duration_sum =0
-        distance_sum =0
-        count_sum=0
-        
-        for activity_key, activity in athlete_year_stats.items():
-            duration_sum+=activity['duration']
-            distance_sum+=activity['distance']
-            count_sum+=activity['count']
             
         activity_type = latest_event['type']
         if activity_type in self.VERBTONOUN:
             activity_type =  self.VERBTONOUN[activity_type]
         
         template = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION}"
+        if activity_type == "Yoga":
+            template = "YTD for {TOTALCOUNT} Yoga sessions is {TOTALDURATION}"
         
         if self.getRecoveryTime(latest_event) is not None:
             template+="\nRecovery Time {RECOVERYTIME}"
