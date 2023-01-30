@@ -29,15 +29,17 @@ class Strava:
                "Rowing": "row",
                "Walk": "walk",
                "Yoga": "yoga",
-               "WeightTraining": "weight training",
-               "StairStepper": "stair stepping",
-               "Workout": "workout"
+               "WeightTraining": "weight training session",
+               "StairStepper": "stair stepping session",
+               "Workout": "workout",
+               "Hike": "hike",
+               "Swim": "swim"
              }
     ZERODISTANCE = [
-        "yoga",
+        "yoga session",
         "workout",
-        "stair stepping",
-        "weight training"]
+        "stair stepping session",
+        "weight training session"]
     
     def __init__(self, athleteId: int = None, auth:str = None):
         
@@ -326,7 +328,7 @@ class Strava:
         
         template = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION}"
         if activity_type in self.ZERODISTANCE:
-            template = "YTD for {TOTALCOUNT} {TYPE} sessions is {TOTALDURATION}"
+            template = "YTD for {TOTALCOUNT} {TYPE}s is {TOTALDURATION}"
         
         if self.getRecoveryTime(latest_event) is not None:
             template+="\nRecovery Time {RECOVERYTIME}"
@@ -401,7 +403,7 @@ class Strava:
         elif activity_type == self.VERBTONOUN['Run']:
             activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {MINUTEMILES}min/mile / {MINUTEKM}min/km - {ACTIVITYURL}"
         elif activity_type in self.ZERODISTANCE:
-            activity = "{NAME} did {TYPE} session for {DURATION} - {ACTIVITYURL}"
+            activity = "{NAME} did a {TYPE} for {DURATION} - {ACTIVITYURL}"
         
         tags = []
         
