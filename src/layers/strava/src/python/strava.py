@@ -131,6 +131,7 @@ class Strava:
         start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
         
         athlete = self._getAthleteFromDDB()
+        logger.info(athlete)
         newbody = json.loads(athlete['body'])
         logger.info(newbody)
         newbody = newbody.pop(str(current_year))
