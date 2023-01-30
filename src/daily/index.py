@@ -50,7 +50,7 @@ def lambda_handler(event, context):
     stravaClientSecret=Utils.getSSM("StravaClientSecret")
     
     for Id in AthleteIds:
-    
+        runningYTD=0.0
         logger.info("Working on {}".format(Id))
         strava = Strava(athleteId=Id,stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
         athlete_record = strava._getAthleteFromDDB()
@@ -62,11 +62,9 @@ def lambda_handler(event, context):
 
         if Id in listOfIds:
             logger.info("Found existing athlete")
-            runningYTD=0.0
-            if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
+            if year in body:
                 logger.info("Updating YTD for runnner {}".format(Id))
-                runningYTD = body[year]['Run']['distance']/1609.34
-               
+                runningYTD = calculateYTDmiles(body[year])
             else:
                 logger.info("Runner {} has not run this year so far.".format(Id))
             cell = worksheet.find(Id, in_column=1)
@@ -78,19 +76,17 @@ def lambda_handler(event, context):
             if fullName in listOfNames:
                 cell = worksheet.find(fullName, in_column=2)
                 worksheet.update_cell(cell.row,1, Id)
-                runningYTD=0.0
-                if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
+                if year in body:
                     logger.info("Updating YTD for runnner {}".format(Id))
-                    runningYTD = body[year]['Run']['distance']/1609.34
-                   
+                    runningYTD = calculateYTDmiles(body[year])
                 else:
                     logger.info("Runner {} has not run this year so far.".format(Id))
                 worksheet.update_cell(cell.row,month+2 , runningYTD)
             else:
                 newRow=[Id,fullName]
-                if year in body and "Run" in body[year] and "distance" in body[year]['Run']:
+                if year in body:
                     logger.info("Adding YTD for runnner {}".format(Id))
-                    runningYTD = body[year]['Run']['distance']/1609.34
+                    runningYTD = calculateYTDmiles(body[year])
                     nonMonths=[0] * (month-1)
                     newRow.extend(nonMonths)
                     newRow.append(runningYTD)
@@ -103,8 +99,22 @@ def lambda_handler(event, context):
                 worksheet.insert_row(newRow,index=len(listOfNames)+1)
             listOfNames.append(fullName)
 
-
     logging.info("Profit!")
+    
+def calculateYTDmiles(body):
+    walk = 0
+    if 'Walk' in body:
+        walk = body['Walk']['distance']
+    
+    run = 0
+    if 'Run' in body:
+        run = body['Run']['distance']
+    
+    ytd = run/1609.34
+    if walk > run:
+        ytd = (run + walk)/1609.34
+        
+    return ytd
 
 def getIds():
     ddb = boto3.resource('dynamodb')
