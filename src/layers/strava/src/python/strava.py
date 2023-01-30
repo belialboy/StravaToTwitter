@@ -438,6 +438,7 @@ class Strava:
             activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {MINUTEMILES}min/mile / {MINUTEKM}min/km - {ACTIVITYURL}"
         elif activity_type in self.ZERODISTANCE:
             activity = "{NAME} did a {TYPE} for {DURATION} - {ACTIVITYURL}"
+            ytdactivity = "\nYTD for {TOTALCOUNT} {TYPE}s in {TOTALDURATION} "
         
         tags = []
         
