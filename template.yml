@@ -225,6 +225,7 @@ Resources:
           - dynamodb:UpdateItem
           - dynamodb:GetItem
           - dynamodb:Scan
+          - dynamodb:PutItem
           Resource: 
           - !GetAtt Totals.Arn
           - !GetAtt Details.Arn
