@@ -131,12 +131,12 @@ class Strava:
         start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
         
         athlete = self._getAthleteFromDDB()
-        logger.info(athlete)
         newbody = json.loads(athlete['body'])
         logger.info(newbody)
         newbody = newbody.pop(str(current_year))
         logger.info(newbody)
         self._updateAthleteOnDB(json.dumps(newbody))
+        self._writeTokens()
         logger.info("Done flattening totals for this athlete")
             
     def buildTotals(self):
@@ -187,12 +187,12 @@ class Strava:
             self._writeTokens(new_tokens)
 
                 
-    def _writeTokens(self,tokens):
+    def _writeTokens(self,tokens=None):
         logger.info("Writing strava tokens to DDB")
-
         table = self._getDDBTable()
         logger.debug("Building token dict for storage")
-        self.tokens = {"expires_at":tokens['expires_at'],"access_token":tokens['access_token'],"refresh_token":tokens['refresh_token']}
+        if tokens is not None:
+            self.tokens = {"expires_at":tokens['expires_at'],"access_token":tokens['access_token'],"refresh_token":tokens['refresh_token']}
         logger.debug("Writing token dict to DB")
         table.update_item(
             Key={
