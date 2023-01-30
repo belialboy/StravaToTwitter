@@ -41,14 +41,20 @@ class Strava:
         "stair stepping session",
         "weight training session"]
     
-    def __init__(self, athleteId: int = None, auth:str = None):
+    def __init__(self, athleteId: int = None, auth:str = None, stravaClientId:str = None, stravaClientSecret:str = None):
         
-        self.stravaClientId=Utils.getSSM("StravaClientId")
+        self.stravaClientId = stravaClientId
+        if self.stravaClientId is None:
+            self.stravaClientId=Utils.getSSM("StravaClientId")
         if self.stravaClientId is None:
             return None
-        self.stravaClientSecret=Utils.getSSM("StravaClientSecret")
+        
+        self.stravaClientSecret = stravaClientSecret
+        if self.stravaClientSecret is None:
+            self.stravaClientSecret=Utils.getSSM("StravaClientSecret")
         if self.stravaClientSecret is None:
             return None
+            
         self.ddbTableName=Utils.getEnv("totalsTable")
         self.ddbDetailTableName=Utils.getEnv("detailsTable")
         
@@ -56,7 +62,8 @@ class Strava:
             self.registrationResult = self._newAthlete(auth)
         elif athleteId is not None:
             self.athleteId = athleteId
-            self.tokens = json.loads(self._getAthleteFromDDB()['tokens'])
+            self.athlete = self._getAthleteFromDDB()
+            self.tokens = json.loads(self.athlete['tokens'])
     
     def _newAthlete(self,code):
         

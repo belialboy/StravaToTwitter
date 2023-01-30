@@ -46,10 +46,13 @@ def lambda_handler(event, context):
     # List all the athletes that we currently know about
     AthleteIds = getIds()
     
+    stravaClientId=Utils.getSSM("StravaClientId")
+    stravaClientSecret=Utils.getSSM("StravaClientSecret")
+    
     for Id in AthleteIds:
     
         logger.info("Working on {}".format(Id))
-        strava = Strava(athleteId=Id)
+        strava = Strava(athleteId=Id,stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
         athlete_record = strava._getAthleteFromDDB()
         if "body" not in athlete_record:
             logger.info("No running so far")
