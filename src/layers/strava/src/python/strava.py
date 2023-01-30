@@ -131,8 +131,8 @@ class Strava:
         start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
         
         athlete = self._getAthleteFromDDB()
-        athlete['body'].pop(current_year)
-        self._updateAthleteOnDB(json.dumps(athlete['body']))
+        newbody = json.loads(athlete['body']).pop(current_year)
+        self._updateAthleteOnDB(json.dumps(newbody))
         logger.info("Done flattening totals for this athlete")
             
     def buildTotals(self):
