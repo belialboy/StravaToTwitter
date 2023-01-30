@@ -53,6 +53,11 @@ def lambda_handler(event, context):
         runningYTD=0.0
         logger.info("Working on {}".format(Id))
         strava = Strava(athleteId=Id,stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
+        
+        if 'reset' in event and event['reset'] == Id:
+            strava.flattenTotals()
+            strava.buildTotals()
+        
         athlete_record = strava._getAthleteFromDDB()
         if "body" not in athlete_record:
             logger.info("No running so far")

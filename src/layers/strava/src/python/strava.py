@@ -111,39 +111,7 @@ class Strava:
                 logger.info("Net new athlete. Welcome!")
                 
                 # Get any existing data for runs, rides or swims they may have done, and add these as the starting status for the body element
-                current_year = datetime.datetime.now().year
-                start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
-                page = 1
-                PER_PAGE = 30
-                content = {}
-                while True:
-                    activities = self._get(endpoint = "{STRAVA}/activities?after={EPOCH}&page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,EPOCH=start_epoch,PAGE=page,PER_PAGE=PER_PAGE))
-                    ## Add all activities to the details table
-                    for activity in activities:
-                        activity['type'] = activity['type'].replace("Virtual","")
-                        try:
-                            # if the activity is already in the DDB, this will excpetion
-                            self.putDetailActivity(activity)
-                        except Exception as e:
-                            logger.error(traceback.format_exc())
-                            logger.error("Failed to add activity {ID}; trying to continue. This event will not be added to the totals.".format(ID=activity['id']))
-                        else:
-                            # if the activity is not already in the ddb, then we can add it to the running totals
-                            content=self.updateContent(
-                                    content=content,
-                                    activityType=activity['type'],
-                                    distance=activity['distance'], 
-                                    duration=activity['elapsed_time']
-                                    )
-                    ## Write what we have to the DDB table
-                    if page == 1:
-                        self._putAthleteToDB(json.dumps(content))
-                    else:
-                        self._updateAthleteOnDB(json.dumps(content))
-                    ## Are there more activities?
-                    if len(activities) < PER_PAGE:
-                        break
-                    page+=1
+                self.buildTotals()
                         
             self._writeTokens(self.tokens)
             success = {
@@ -157,6 +125,52 @@ class Strava:
         else:
             exit() # Don't give them any detail about the failure
             
+    def flattenTotals(self):
+        logger.info("Flattening totals for this athlete")
+        current_year = datetime.datetime.now().year
+        start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
+        
+        athlete = self._getAthleteFromDDB()
+        athlete['body'].pop(current_year)
+        self._updateAthleteOnDB(json.dumps(athlete['body']))
+        logger.info("Done flattening totals for this athlete")
+            
+    def buildTotals(self):
+        logger.info("Building totals for this athlete")
+        current_year = datetime.datetime.now().year
+        start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
+        page = 1
+        PER_PAGE = 30
+        content = {}
+        while True:
+            activities = self._get(endpoint = "{STRAVA}/activities?after={EPOCH}&page={PAGE}&per_page={PER_PAGE}".format(STRAVA=self.STRAVA_API_URL,EPOCH=start_epoch,PAGE=page,PER_PAGE=PER_PAGE))
+            ## Add all activities to the details table
+            for activity in activities:
+                activity['type'] = activity['type'].replace("Virtual","")
+                try:
+                    # if the activity is already in the DDB, this will excpetion
+                    self.putDetailActivity(activity)
+                except Exception as e:
+                    logger.error(traceback.format_exc())
+                    logger.error("Failed to add activity {ID}; trying to continue. This event will not be added to the totals.".format(ID=activity['id']))
+                else:
+                    # if the activity is not already in the ddb, then we can add it to the running totals
+                    content=self.updateContent(
+                            content=content,
+                            activityType=activity['type'],
+                            distance=activity['distance'], 
+                            duration=activity['elapsed_time']
+                            )
+            ## Write what we have to the DDB table
+            if page == 1:
+                self._putAthleteToDB(json.dumps(content))
+            else:
+                self._updateAthleteOnDB(json.dumps(content))
+            ## Are there more activities?
+            if len(activities) < PER_PAGE:
+                break
+            page+=1
+        logger.info("Done building totals for this athlete")
         
     def refreshTokens(self):
         logger.debug("We should already have some tokens. Check if we need to refresh.")
@@ -279,13 +293,22 @@ class Strava:
             
     def putDetailActivity(self,activity):
         table = self._getDDBDetailTable()
-        table.put_item(
-            Item={
-              'activityId': int(activity['id']),
-              'athleteId': int(self.athleteId),
-              'eventEpoch': int(datetime.datetime.strptime(activity['start_date'],"%Y-%m-%dT%H:%M:%SZ").timestamp()),
-              'event': json.dumps(activity)
-            })
+        try:
+            table.put_item(
+                Item={
+                  'activityId': int(activity['id']),
+                  'athleteId': int(self.athleteId),
+                  'eventEpoch': int(datetime.datetime.strptime(activity['start_date'],"%Y-%m-%dT%H:%M:%SZ").timestamp()),
+                  'event': json.dumps(activity)
+                })
+        except:
+            table.update_item(
+                Key={'activityId': int(activity['id']),'athleteId': int(self.athleteId)},
+                AttributeUpdates={
+                  'event':{
+                    'Value':json.dumps(activity),
+                    'Action':'PUT'}
+                })
             
     def updateContent(self, content, activityType, distance, duration):
         year = str(datetime.datetime.now().year)
