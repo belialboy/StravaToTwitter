@@ -28,7 +28,7 @@ class Strava:
                "Ride": "ride",
                "Rowing": "row",
                "Walk": "walk",
-               "Yoga": "yoga",
+               "Yoga": "yoga session",
                "WeightTraining": "weight training session",
                "StairStepper": "stair stepping session",
                "Workout": "workout",
@@ -439,6 +439,7 @@ class Strava:
         elif activity_type in self.ZERODISTANCE:
             activity = "{NAME} did a {TYPE} for {DURATION} - {ACTIVITYURL}"
             ytdactivity = "\nYTD for {TOTALCOUNT} {TYPE}s in {TOTALDURATION} "
+            ytdall = "\nYTD for all {ALLACTIVITYCOUNT} activities in {ALLACTIVITYDURATION} "
         
         tags = []
         
