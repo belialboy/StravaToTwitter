@@ -69,7 +69,7 @@ class TestStrava(unittest.TestCase):
     with open('test/payloads/ddb_body.json') as json_file:
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
-    latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
+    latest = {"type": "Ride", 'distance': 10000, 'moving_time': 3600, "id": 123, "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
     self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h00m00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h00m 🙌 🔥 🌍 🔟 🤩 💨 ⏱️")
   
   @patch('src.layers.strava.src.python.strava.Utils.getEnv')
@@ -85,7 +85,7 @@ class TestStrava(unittest.TestCase):
     with open('test/payloads/ddb_body.json') as json_file:
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
-    latest = {"type": "Ride", 'distance': 10000, 'elapsed_time': 3600, "id": 123, "device_name": "Zwift", "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
+    latest = {"type": "Ride", 'distance': 10000, 'moving_time': 3600, "id": 123, "device_name": "Zwift", "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
     self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h00m00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h00m 🙌 🔥 🌍 🔟 🤩 💨 ⏱️ #RideOn @GoZwift")
   
   @patch('src.layers.strava.src.python.strava.Utils.getEnv')
@@ -97,8 +97,8 @@ class TestStrava(unittest.TestCase):
       tokens={"expires_at":1234567890,"access_token":"abcdef1234567890","refresh_token":"0987654321fedcba"}
       mock_method.return_value = {"tokens": json.dumps(tokens)}
       strava=Strava(athleteId = 1234567)
-      self.assertEqual(strava.getRecoveryTime({'average_heartrate':120,'elapsed_time':60*60}),Utils.secsToStr(129600))
-      self.assertEqual(strava.getRecoveryTime({'average_heartrate':180,'elapsed_time':60*60*3}),Utils.secsToStr(345600))
+      self.assertEqual(strava.getRecoveryTime({'average_heartrate':120,'moving_time':60*60}),Utils.secsToStr(129600))
+      self.assertEqual(strava.getRecoveryTime({'average_heartrate':180,'moving_time':60*60*3}),Utils.secsToStr(345600))
 
   
 if __name__ == '__main__':

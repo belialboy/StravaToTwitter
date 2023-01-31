@@ -22,6 +22,7 @@ ssm = boto3.client("ssm")
 class Strava:
     STRAVA_API_URL = "https://www.strava.com/api/v3"
     STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token"
+    STRAVA_DURATION_INDEX = "moving_time"
     VERBTONOUN = { "VirtualRun": "virtual run",
                "Run": "run",
                "VirtualRide": "virtual ride",
@@ -163,7 +164,7 @@ class Strava:
                             content=content,
                             activityType=activity['type'],
                             distance=activity['distance'], 
-                            duration=activity['elapsed_time']
+                            duration=activity[self.STRAVA_DURATION_INDEX]
                             )
             ## Write what we have to the DDB table
             if page == 1:
@@ -387,7 +388,7 @@ class Strava:
         if "average_heartrate" not in event:
             return None
     
-        wrt_sec = ((event['average_heartrate']*(event['elapsed_time']/60))/200)*3600
+        wrt_sec = ((event['average_heartrate']*(event[self.STRAVA_DURATION_INDEX]/60))/200)*3600
         
         return Utils.secsToStr(min(int(wrt_sec),4*24*60*60))
         
@@ -406,9 +407,9 @@ class Strava:
             activity_type =  self.VERBTONOUN[activity_type]
         strava_athlete = self.getCurrentAthlete()
         
-        latest_activity_mph = Utils.secAndMetersToMPH(latest_event['distance'],latest_event['elapsed_time'])
-        ytd_activity_mph = Utils.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event['elapsed_time'])
-        latest_activity_kmph = Utils.secAndMetersToKmPH(latest_event['distance'],latest_event['elapsed_time'])
+        latest_activity_mph = Utils.secAndMetersToMPH(latest_event['distance'],latest_event[self.STRAVA_DURATION_INDEX])
+        ytd_activity_mph = Utils.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])
+        latest_activity_kmph = Utils.secAndMetersToKmPH(latest_event['distance'],latest_event[self.STRAVA_DURATION_INDEX])
         
         achievement_count = 0
         pr_count = 0
@@ -454,7 +455,7 @@ class Strava:
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100mile stone
             ytdstring = ytdall
             tags.append("🙌")
-        if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event['elapsed_time'])/86400):
+        if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event[self.STRAVA_DURATION_INDEX])/86400):
             # If the most recent activity puts the sum of all the activities' duration in that category for the year over a 1day stone
             ytdstring = ytdall
             if activity_type == self.VERBTONOUN['Ride']:
@@ -475,7 +476,7 @@ class Strava:
             # If the total distance for all activities this year has just gone over a 100mile stone
             ytdstring = ytdactivity
             tags.append("📏")
-        if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event['elapsed_time'])/86400):
+        if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/86400):
             # If the total duration for all activities this year has just gone over a 1day stone
             ytdstring = ytdactivity
             tags.append("🌍")
@@ -495,7 +496,7 @@ class Strava:
             logger.info("{EVENTDISTANCE} gt {AVG}".format(EVENTDISTANCE=latest_event['distance'],AVG=((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*1.05))
             ytdstring = ytdactivity
             tags.append("💨")
-        if latest_event['elapsed_time'] > ((ytd['duration']-latest_event['elapsed_time'])/(ytd['count']-1))*1.05:
+        if latest_event[self.STRAVA_DURATION_INDEX] > ((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/(ytd['count']-1))*1.05:
             # If they spent longer than normal doing this activity
             ytdstring = ytdactivity
             tags.append("⏱️")
@@ -530,7 +531,7 @@ class Strava:
             TYPE=activity_type,
             DISTANCEMILES=latest_event['distance']/1609,
             DISTANCEKM=latest_event['distance']/1000,
-            DURATION=Utils.secsToStr(latest_event['elapsed_time']),
+            DURATION=Utils.secsToStr(latest_event[self.STRAVA_DURATION_INDEX]),
             TOTALDISTANCEMILES=ytd['distance']/1609,
             TOTALDISTANCEKM=ytd['distance']/1000,
             TOTALDURATION=Utils.secsToStr(ytd['duration']),
@@ -544,8 +545,8 @@ class Strava:
             ACTIVITYKMPH=latest_activity_kmph,
             NUMACHIEVEMENTS=achievement_count,
             PRCOUNT=pr_count,
-            MINUTEMILES=Utils.getMinMiles(latest_event['elapsed_time'],latest_event['distance']),
-            MINUTEKM=Utils.getMinKm(latest_event['elapsed_time'],latest_event['distance'])
+            MINUTEMILES=Utils.getMinMiles(latest_event[self.STRAVA_DURATION_INDEX],latest_event['distance']),
+            MINUTEKM=Utils.getMinKm(latest_event[self.STRAVA_DURATION_INDEX],latest_event['distance'])
             )
 
         logger.info("Returning Twitter String: '{STRING}'".format(STRING=status))
