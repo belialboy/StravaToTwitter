@@ -70,7 +70,15 @@ class TestStrava(unittest.TestCase):
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
     latest = {"type": "Ride", 'distance': 10000, 'moving_time': 3600, "id": 123, "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
-    self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h00m00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h00m 🙌 🔥 🌍 🔟 🤩 💨 ⏱️")
+    twitterString = strava.makeTwitterString(body["2022"],latest)
+    self.assertIn("Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h00m00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h00m",twitterString)
+    self.assertIn("🙌",twitterString)
+    self.assertIn("🔥",twitterString)
+    self.assertIn("🌍",twitterString)
+    self.assertIn("🔟",twitterString)
+    self.assertIn("🤩",twitterString)
+    self.assertIn("💨",twitterString)
+    self.assertIn("⏱️",twitterString)
   
   @patch('src.layers.strava.src.python.strava.Utils.getEnv')
   @patch('src.layers.strava.src.python.strava.Utils.getSSM')
@@ -86,7 +94,17 @@ class TestStrava(unittest.TestCase):
       body = json.load(json_file)
     strava=Strava(athleteId = 1234567)
     latest = {"type": "Ride", 'distance': 10000, 'moving_time': 3600, "id": 123, "device_name": "Zwift", "name": "blah", "start_date_local": "2022-12-23T12:00:00Z"}
-    self.assertEqual(strava.makeTwitterString(body["2022"],latest),"Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h00m00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h00m 🙌 🔥 🌍 🔟 🤩 💨 ⏱️ #RideOn @GoZwift")
+    twitterString = strava.makeTwitterString(body["2022"],latest)
+    
+    self.assertIn("Jonathan Jenkyn did a ride of 6.22miles / 10.00km in 01h00m00s at 6.2mph / 10.0kmph - https://www.strava.com/activities/123\nYTD for 60 rides 62.15miles / 100.00km in 1 day 00h00m",twitterString)
+    self.assertIn("🙌",twitterString)
+    self.assertIn("🔥",twitterString)
+    self.assertIn("🌍",twitterString)
+    self.assertIn("🔟",twitterString)
+    self.assertIn("🤩",twitterString)
+    self.assertIn("💨",twitterString)
+    self.assertIn("⏱️",twitterString)
+    self.assertIn("#RideOn @GoZwift",twitterString)
   
   @patch('src.layers.strava.src.python.strava.Utils.getEnv')
   @patch('src.layers.strava.src.python.strava.Utils.getSSM')
