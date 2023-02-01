@@ -27,7 +27,12 @@ def lambda_handler(event, context):
     
     year = str(datetime.now().year)
     month = datetime.now().month
-
+    
+    if 'year' in event:
+        year = str(event['year'])
+    if 'month' in event:
+        month = int(event['month'])
+    
     stravaClientId=Utils.getSSM("StravaClientId")
     stravaClientSecret=Utils.getSSM("StravaClientSecret")
         
@@ -60,6 +65,7 @@ def lambda_handler(event, context):
             runningYTD=0.0
             logger.info("Working on {}".format(Id))
             
+            strava = Strava(athleteId=event['reset'],stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
             
             athlete_record = strava._getAthleteFromDDB()
             if "body" not in athlete_record:
