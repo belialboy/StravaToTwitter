@@ -65,7 +65,7 @@ def lambda_handler(event, context):
             runningYTD=0.0
             logger.info("Working on {}".format(Id))
             
-            strava = Strava(athleteId=event['reset'],stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
+            strava = Strava(athleteId=Id,stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
             
             athlete_record = strava._getAthleteFromDDB()
             if "body" not in athlete_record:
