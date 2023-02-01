@@ -7,6 +7,7 @@ import datetime
 import math
 import os
 import traceback
+import random
 
 logger = logging.getLogger()
 
@@ -451,7 +452,7 @@ class Strava:
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100km stone
             ytdstring = ytdall
             tags.append("🙌")
-        if math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
+        elif math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
             # If the most recent activity puts the sum of all the activities in that category for the year over a 100mile stone
             ytdstring = ytdall
             tags.append("🙌")
@@ -508,6 +509,7 @@ class Strava:
             achievement_count=latest_event['achievement_count']
         
         ## RARE MILESTONES
+        random.shuffle(tags)
         
         if len(tags) == 0:
             return None
