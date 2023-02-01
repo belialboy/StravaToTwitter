@@ -137,7 +137,7 @@ class Strava:
         newbody = newbody.pop(str(current_year))
         logger.info(newbody)
         self._updateAthleteOnDB(json.dumps(newbody))
-        self._writeTokens()
+        self._writeTokens(self.tokens)
         logger.info("Done flattening totals for this athlete")
             
     def buildTotals(self):
