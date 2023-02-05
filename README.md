@@ -104,7 +104,8 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
                 "lambda:UntagResource",
                 "lambda:UpdateFunctionCode",
                 "lambda:UpdateFunctionConfiguration",
-                "lambda:InvokeFunction"
+                "lambda:InvokeFunction",
+                "lambda:CreateEventSourceMapping"
             ],
             "Resource": [
                 "arn:aws:lambda:*:930395124338:function:*"
