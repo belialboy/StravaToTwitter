@@ -84,7 +84,8 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
                 "s3:ListAllMyBuckets",
                 "ssm:GetParameters",
                 "ssm:GetParameter",
-                "dynamodb:*"
+                "dynamodb:*",
+                "sqs:*"
             ],
             "Resource": "*"
         },
@@ -190,5 +191,4 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
 ## Future Stuff
 
 * It needs lots more unit-testing... that's the next thing for me to drive.
-* Add feature to require registrants to be a part of a particular strava club. This then supports the idea that this application can be used by sporting clubs to stream efforts by its members
 * Standardise the formatting and variable naming convention. (It was initially just a noddy script, but grew up too quickly)
