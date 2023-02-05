@@ -136,7 +136,7 @@ def calculateYTDmiles(body):
 
 def getIds():
     ddb = boto3.resource('dynamodb')
-    ddbTable = ddb.Table(os.environ['totalsTable'])
+    ddbTable = ddb.Table(Utils.getEnv('totalsTable'))
     Ids = ddbTable.scan(ProjectionExpression='Id')
     returnable = []
     for Id in Ids['Items']:

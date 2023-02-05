@@ -6,11 +6,13 @@ import requests
 import boto3
 import datetime
 from strava import Strava
+from strava import Utils
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-lambda_client = boto3.client("lambda")
+#lambda_client = boto3.client("lambda")
+sqs_client = boto3.client("sqs")
 
 def lambda_handler(event, context):
     
@@ -111,8 +113,13 @@ def lambda_handler(event, context):
                 if "object_type" in body and "aspect_type" in body and body['object_type'] == "activity" and body['aspect_type'] == "create":
                     # Async call to the other lamda so we can return fast!
                     
-                    logger.info("Calling ASync lambda")
-                    lambda_client.invoke(FunctionName=os.environ["webhookASync"],InvocationType='Event',Payload=event['body'])
+                    #logger.info("Calling ASync lambda")
+                    logger.info("Adding event to SQS")
+                    #lambda_client.invoke(FunctionName=os.environ["webhookASync"],InvocationType='Event',Payload=event['body'])
+                    sqs_client.send_message(
+                        QueueUrl=Utils.getEnv("sqsUrl"),
+                        MessageBody=event['body']
+                    )
                 else:
                     logger.info("Webhook event is not a new activity")
                     

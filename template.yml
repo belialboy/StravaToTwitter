@@ -130,17 +130,17 @@ Resources:
           ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
           totalsTable: !Ref Totals
           detailsTable: !Ref Details
-          webhookASync: !Ref WebhookASync
+          sqsUrl: !Ref StravaEventQueue.QueueUrl
       Events:
         HttpApiEvent:
           Type: HttpApi
       Policies:
       - Statement:
-        - Sid: LambdaInvoke
+        - Sid: SQS
           Effect: Allow
           Action:
-          - lambda:InvokeFunction
-          Resource: !GetAtt WebhookASync.Arn
+          - sqs:SendMessage
+          Resource: !GetAtt StravaEventQueue.Arn
         - Sid: DynamoDBAccess
           Effect: Allow
           Action:
@@ -202,6 +202,17 @@ Resources:
           Resource: 
           - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*'
           - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt StravaEventQueue.Arn
+            BatchSize: 10
+            
+  StravaEventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: 300
           
   DailyPostLambda:
     Type: AWS::Serverless::Function
