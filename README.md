@@ -191,5 +191,5 @@ If you're feeling adventurous, you could fork this GitHub repo and then create a
 ```
 ## Future Stuff
 
-* It needs lots more unit-testing... that's the next thing for me to drive. 
+* It needs lots more unit-testing... that's the next thing for me to drive.
 * Standardise the formatting and variable naming convention. (It was initially just a noddy script, but grew up too quickly)
