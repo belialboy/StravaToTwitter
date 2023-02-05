@@ -130,7 +130,7 @@ Resources:
           ssmPrefix: !If [MakeSSMParams,!Ref AWS::StackName,!Ref pSSMPrefix]
           totalsTable: !Ref Totals
           detailsTable: !Ref Details
-          sqsUrl: !Ref StravaEventQueue.QueueUrl
+          sqsUrl: !GetAtt StravaEventQueue.QueueUrl
       Events:
         HttpApiEvent:
           Type: HttpApi
