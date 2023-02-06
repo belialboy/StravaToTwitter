@@ -25,30 +25,31 @@ def lambda_handler(event, context):
     logging.info(event)
     twitter = getTwitterClient()
     for record in event['Records']:
-    
+        
+        recordjson = json.loads(record['body'])
         debug = False
-        if "debug" in record:
+        if "debug" in recordjson:
             logger.setLevel(logging.DEBUG)
             debug = True
         
         if "stravaId" in os.environ:
-          if 'subscription_id' not in record or int(record['subscription_id']) != int(os.environ['stravaId']):
+          if 'subscription_id' not in recordjson or int(recordjson['subscription_id']) != int(os.environ['stravaId']):
             logger.error("This request does not have the checksum equal to the expected value.") # 'checksum' is obfustication, but it'll do for now
             return
         
-        strava = Strava(athleteId=record['owner_id'])
+        strava = Strava(athleteId=recordjson['owner_id'])
         
         athlete_record = strava._getAthleteFromDDB()
         
         logger.info("Checking for race condition")
-        if not debug and "last_activity_id" in athlete_record and record['object_id'] == athlete_record['last_activity_id']:
+        if not debug and "last_activity_id" in athlete_record and recordjson['object_id'] == athlete_record['last_activity_id']:
             logger.info("Bailing as this is a duplicate")
             exit()
         elif not debug:
-            strava.updateLastActivity(record['object_id'])
+            strava.updateLastActivity(recordjson['object_id'])
         
         # get the activity details
-        activity = strava.getActivity(record['object_id'])
+        activity = strava.getActivity(recordjson['object_id'])
         activity['type'] = activity['type'].replace("Virtual","")
         
         if "body" not in athlete_record:
@@ -68,14 +69,14 @@ def lambda_handler(event, context):
             logger.error("Failed to add activity {ID}; trying to continue. This event will not be added to the totals.".format(ID=activity['id']))
                             
         else:
-            logger.info("Activity stored in detail database ({ID})".format(ID=record['object_id']))
+            logger.info("Activity stored in detail database ({ID})".format(ID=recordjson['object_id']))
             
         year = str(datetime.now().year)
         
         # build a string to tweet
         time.sleep(5) # Some of the activities take a moment or two to upload their images.
         # Get the activity from strava
-        activity = strava.getActivity(record['object_id'])
+        activity = strava.getActivity(recordjson['object_id'])
         activity['type'] = activity['type'].replace("Virtual","")
         
         if twitter is not None:
@@ -124,9 +125,9 @@ def lambda_handler(event, context):
                             
         else:
             if result:
-                logger.info("Strava activity description updated.".format(ID=record['object_id']))
+                logger.info("Strava activity description updated.".format(ID=recordjson['object_id']))
             else:
-                logger.info("Strava activity description not updated.".format(ID=record['object_id']))
+                logger.info("Strava activity description not updated.".format(ID=recordjson['object_id']))
     
     logging.info("Profit!")
     
