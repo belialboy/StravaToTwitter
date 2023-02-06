@@ -214,6 +214,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       DelaySeconds: 300
+      VisibilityTimeout: 600
           
   DailyPostLambda:
     Type: AWS::Serverless::Function
