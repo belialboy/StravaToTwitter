@@ -65,7 +65,8 @@ class Strava:
         elif athleteId is not None:
             self.athleteId = athleteId
             self.athlete = self._getAthleteFromDDB()
-            self.tokens = json.loads(self.athlete['tokens'])
+            if self.athlete is not None:
+                self.tokens = json.loads(self.athlete['tokens'])
     
     def _newAthlete(self,code):
         

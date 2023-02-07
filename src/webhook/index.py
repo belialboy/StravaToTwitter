@@ -31,14 +31,18 @@ def lambda_handler(event, context):
             logger.setLevel(logging.DEBUG)
             debug = True
         
-        if Utils.getEnv("stravaId") is not None:
-          if 'subscription_id' not in recordjson or int(recordjson['subscription_id']) != int(Utils.getEnv("stravaId")):
+        
+        if Utils.getEnv("subscription_id") is not None:
+          if 'subscription_id' not in recordjson or int(recordjson['subscription_id']) != int(Utils.getEnv("subscription_id")):
             logger.error("This request does not have the checksum equal to the expected value.") # 'checksum' is obfustication, but it'll do for now
             return
         
         strava = Strava(athleteId=recordjson['owner_id'])
         
         athlete_record = strava._getAthleteFromDDB()
+        if athlete_record is None:
+            logger.error("Something has gone wrong. We've recieved an API call for an activity owned by {}, but have no corresponding registration in our DDB table.".format(recordjson['owner_id']))
+            continue
         
         logger.info("Checking for race condition")
         if not debug and "last_activity_id" in athlete_record and recordjson['object_id'] == athlete_record['last_activity_id']:
