@@ -4,6 +4,7 @@ import urllib3
 import logging
 import requests
 import time
+from strava import Utils
 
 SUCCESS = "SUCCESS"
 FAILED = "FAILED"
@@ -48,22 +49,12 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
 
         print("send(..) failed executing http.request(..):", e)
         
-def updateLambda(new_id):
-  logger.info("Updating lambda function ({}) environment variables".format(os.environ['WebhookLambda']))
-  lambdaclient=boto3.client("lambda")
-  existing=lambdaclient.get_function_configuration(FunctionName=os.environ['WebhookLambda'])
-  logger.info("Got the existing variables")
-  newvariables = dict(existing['Environment']['Variables'])
-  newvariables['stravaId']=str(new_id)
-  logger.info("Updating the variables to include the stravaId")
-  UpdateRequest=lambdaclient.update_function_configuration(FunctionName=os.environ['WebhookLambda'],Environment={'Variables':newvariables})
-  if "Error" in UpdateRequest['Environment']:
-    logger.error("Failed to update {}: {} - {}".format(os.environ['WebhookLambda'],UpdateRequest['Environment']['Error']['ErrorCode'],UpdateRequest['Environment']['Error']['Message']))
-    return False
-  logger.info("Lambda function updated successfully")
+def setSubscriptionId(new_id):
+  logger.info("Setting subscription_id SSM parameter")
+  Utils.setSSM("subscription_id",str(new_id))
+  logger.info("subscription_id set successfully")
   return True
-  
-  
+
 def registerWebhookWithStrava(stravaBaseURL,WebhookURL,stravaAuthPayload):
   logger.info("Registering {} with strava".format(WebhookURL))
   sts = boto3.client("sts")
@@ -121,7 +112,7 @@ def lambda_handler(event, context):
             requests.delete(stravaBaseURL+"/"+str(CurrentSubscriptionJson[0]['id']),params=stravaAuthPayload)
             id=registerWebhookWithStrava(stravaBaseURL,os.environ['WebhookURL'],stravaAuthPayload)
             if id is not None:
-              if updateLambda(id):
+              if setSubscriptionId(id):
                 status = SUCCESS
           else:
             logger.info("Webhook already registered. No need to update")
@@ -130,7 +121,7 @@ def lambda_handler(event, context):
           logger.info("There's no existing subscription")
           id=registerWebhookWithStrava(stravaBaseURL,os.environ['WebhookURL'],stravaAuthPayload)
           if id is not None:
-            if updateLambda(id):
+            if setSubscriptionId(id):
               status = SUCCESS
       elif event['RequestType'] == "Delete":
         logger.info("Deleting current subscription")

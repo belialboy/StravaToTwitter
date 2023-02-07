@@ -31,9 +31,9 @@ def lambda_handler(event, context):
             logger.setLevel(logging.DEBUG)
             debug = True
         
-        
-        if Utils.getEnv("subscription_id") is not None:
-          if 'subscription_id' not in recordjson or int(recordjson['subscription_id']) != int(Utils.getEnv("subscription_id")):
+        subscription_id = Utils.getSSM("subscription_id")
+        if subscription_id is not None:
+          if 'subscription_id' not in recordjson or int(recordjson['subscription_id']) != int(subscription_id):
             logger.error("This request does not have the checksum equal to the expected value.") # 'checksum' is obfustication, but it'll do for now
             return
         

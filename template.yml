@@ -339,6 +339,8 @@ Resources:
       Timeout: 60
       Handler: index.lambda_handler
       CodeUri: src/registerwebhook/
+      Layers:
+      - !Ref StravaLayer
       Environment:
         Variables:
             WebhookLambda: !Ref WebhookASync
@@ -361,6 +363,8 @@ Resources:
           Effect: Allow
           Action:
             - ssm:GetParameter
+            - ssm:SetParameter
+            - ssm:DeleteParameter
           Resource: 
           - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AWS::StackName}*'
           - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${pSSMPrefix}*'
