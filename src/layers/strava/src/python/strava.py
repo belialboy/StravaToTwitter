@@ -76,8 +76,11 @@ class Strava:
             self.athleteId = new_tokens['athlete']['id']
             logger.info("Checking to see if the athlete is already registered")
             athlete_record = self._getAthleteFromDDB()
+            
             if athlete_record is None:
-                
+                # Just in case everythin else fails, write some stuff to the db
+                self._putAthleteToDB()
+                self._writeTokens()
                 # Check to see if club mode is active, and if they are a member of the club
                 clubId = Utils.getSSM("StravaClubId")
                 logger.info("Required ClubId = '{CLUBID}'".format(CLUBID=clubId))
@@ -114,8 +117,8 @@ class Strava:
                 
                 # Get any existing data for runs, rides or swims they may have done, and add these as the starting status for the body element
                 self.buildTotals()
-                        
-            self._writeTokens(self.tokens)
+            
+            self._writeTokens()            
             success = {
                     "statusCode": 200,
                     "headers": {
@@ -138,7 +141,7 @@ class Strava:
         newbody = newbody.pop(str(current_year))
         logger.info(newbody)
         self._updateAthleteOnDB(json.dumps(newbody))
-        self._writeTokens(self.tokens)
+        self._writeTokens()
         logger.info("Done flattening totals for this athlete")
             
     def buildTotals(self):
@@ -191,6 +194,7 @@ class Strava:
                 
     def _writeTokens(self,tokens=None):
         logger.info("Writing strava tokens to DDB")
+        logger.info(tokens)
         table = self._getDDBTable()
         logger.debug("Building token dict for storage")
         if tokens is not None:
@@ -260,6 +264,8 @@ class Strava:
         }
         response = requests.post(self.STRAVA_TOKEN_URL, json=data)
         if response.status_code == 200:
+            logger.info("Got initial tokens for athlete.")
+            logger.info(response.json())
             return response.json()
         logger.error("Failed to get OAuth tokens")
         logger.error("{} - {}".format(response.status_code, response.content))
