@@ -44,7 +44,7 @@ def lambda_handler(event, context):
         logger.info("Checking for race condition")
         if not debug and "last_activity_id" in athlete_record and recordjson['object_id'] == athlete_record['last_activity_id']:
             logger.info("Bailing as this is a duplicate")
-            exit()
+            return
         elif not debug:
             strava.updateLastActivity(recordjson['object_id'])
         
@@ -128,6 +128,8 @@ def lambda_handler(event, context):
                 logger.info("Strava activity description updated.".format(ID=recordjson['object_id']))
             else:
                 logger.info("Strava activity description not updated.".format(ID=recordjson['object_id']))
+                
+        
     
     logging.info("Profit!")
     
