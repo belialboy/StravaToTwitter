@@ -4,7 +4,6 @@ import json
 from twython import Twython
 from datetime import datetime
 import time
-import os
 import requests
 import boto3
 import logging
@@ -32,8 +31,8 @@ def lambda_handler(event, context):
             logger.setLevel(logging.DEBUG)
             debug = True
         
-        if "stravaId" in os.environ:
-          if 'subscription_id' not in recordjson or int(recordjson['subscription_id']) != int(os.environ['stravaId']):
+        if Utils.getEnv("stravaId") is not None:
+          if 'subscription_id' not in recordjson or int(recordjson['subscription_id']) != int(Utils.getEnv("stravaId")):
             logger.error("This request does not have the checksum equal to the expected value.") # 'checksum' is obfustication, but it'll do for now
             return
         
@@ -74,7 +73,6 @@ def lambda_handler(event, context):
         year = str(datetime.now().year)
         
         # build a string to tweet
-        time.sleep(5) # Some of the activities take a moment or two to upload their images.
         # Get the activity from strava
         activity = strava.getActivity(recordjson['object_id'])
         activity['type'] = activity['type'].replace("Virtual","")
