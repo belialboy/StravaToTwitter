@@ -43,6 +43,8 @@ class Strava:
         "stair stepping session",
         "weight training session"]
     
+    STRETCH_PERCENT = 1.1
+    
     def __init__(self, athleteId: int = None, auth:str = None, stravaClientId:str = None, stravaClientSecret:str = None):
         
         self.stravaClientId = stravaClientId
@@ -495,16 +497,16 @@ class Strava:
             #  If they've just done a multiple of 10 activities for the entire year
             ytdstring = ytdactivity
             tags.append("🔟")
-        if latest_activity_mph > ytd_activity_mph*1.05:
-            # If they were more than 5% faster than the year average for this activity
+        if latest_activity_mph > ytd_activity_mph*self.STRETCH_PERCENT:
+            # If they were more than 10% faster than the year average for this activity
             ytdstring = ytdactivity
             tags.append("🤩")
-        if latest_event['distance'] > ((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*1.05:
+        if latest_event['distance'] > ((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*self.STRETCH_PERCENT:
             # If this was longer (distance) than the average by more than 5%
-            logger.info("{EVENTDISTANCE} gt {AVG}".format(EVENTDISTANCE=latest_event['distance'],AVG=((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*1.05))
+            logger.info("{EVENTDISTANCE} gt {AVG}".format(EVENTDISTANCE=latest_event['distance'],AVG=((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*self.STRETCH_PERCENT))
             ytdstring = ytdactivity
             tags.append("💨")
-        if latest_event[self.STRAVA_DURATION_INDEX] > ((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/(ytd['count']-1))*1.05:
+        if latest_event[self.STRAVA_DURATION_INDEX] > ((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/(ytd['count']-1))*self.STRETCH_PERCENT:
             # If they spent longer than normal doing this activity
             ytdstring = ytdactivity
             tags.append("⏱️")
@@ -529,7 +531,7 @@ class Strava:
                     tags.append("#TdZ")
         
         local_start = datetime.datetime.strptime(latest_event['start_date_local'],"%Y-%m-%dT%H:%M:%SZ")
-        if (activity_type == self.VERBTONOUN['Run'] or activity_type == self.VERBTONOUN['Walk']) and ("parkrun" in latest_event['name'].lower() or (4950<=latest_event['distance']<=5050 and local_start.weekday()==5 and 8 <=local_start.hour <= 10)):
+        if (activity_type == self.VERBTONOUN['Run'] or activity_type == self.VERBTONOUN['Walk']) and ("parkrun" in latest_event['name'].lower() or (4900<=latest_event['distance']<=5100 and local_start.weekday()==5 and 8 <=local_start.hour <= 10)):
             tags.append("#parkrun")
         
         tag_string = ' '.join(tags)
@@ -661,6 +663,15 @@ class Utils(object):
             logger.error(e)
             logger.error("No {PARAM} set in SSM parameter store".format(PARAM=parameterFullName))
             return None
+    
+    @staticmethod
+    def setSSM(parameterName,parameterValue):
+      parameterFullName="{PREFIX}{PARAMNAME}".format(PREFIX=Utils.getEnv('ssmPrefix'),PARAMNAME=parameterName)
+      try:
+        ssm.set_parameter(Name=parameterFullName,Value=parameterValue)
+      except ssm.exceptions.ParameterAlreadyExists as e:
+        ssm.delete_parameter(Name=parameterFullName)
+        ssm.set_parameter(Name=parameterFullName,Value=parameterValue)
     
     @staticmethod
     def getEnv(variableName):
