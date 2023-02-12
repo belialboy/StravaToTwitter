@@ -121,7 +121,7 @@ class Strava:
                 # Get any existing data for runs, rides or swims they may have done, and add these as the starting status for the body element
                 self.buildTotals()
             
-            self._writeTokens()            
+            self._writeTokens()
             success = {
                     "statusCode": 200,
                     "headers": {
@@ -135,6 +135,7 @@ class Strava:
             
     def flattenTotals(self):
         logger.info("Flattening totals for this athlete")
+        
         current_year = datetime.datetime.now().year
         start_epoch = datetime.datetime(current_year,1,1,0,0).timestamp()
         
@@ -145,6 +146,7 @@ class Strava:
         logger.info(newbody)
         self._updateAthleteOnDB(json.dumps(newbody))
         self._writeTokens()
+        
         logger.info("Done flattening totals for this athlete")
             
     def buildTotals(self):
@@ -175,7 +177,10 @@ class Strava:
                             )
             ## Write what we have to the DDB table
             if page == 1:
-                self._putAthleteToDB(json.dumps(content))
+                try:
+                    self._putAthleteToDB(json.dumps(content))
+                except:
+                    self._updateAthleteOnDB(json.dumps(content))
             else:
                 self._updateAthleteOnDB(json.dumps(content))
             ## Are there more activities?
@@ -229,8 +234,9 @@ class Strava:
         table.put_item(
             Item={
               'Id': str(self.athleteId),
-              'body': body_as_string
+              'body': body_as_string,
             })
+        self._writeTokens()
             
     def _updateAthleteOnDB(self,body_as_string: str):
         logger.info("Updating athlete body on DDB")
