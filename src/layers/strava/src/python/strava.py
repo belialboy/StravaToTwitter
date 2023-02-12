@@ -365,26 +365,38 @@ class Strava:
         
         logger.info("Making Strava Description Update String")
         
+        duration_sum =0
+        distance_sum =0
+        count_sum=0
+        for activity_key, activity in athlete_year_stats.items():
+            duration_sum+=activity['duration']
+            distance_sum+=activity['distance']
+            count_sum+=activity['count']
+        
         ytd = athlete_year_stats[latest_event['type']]
             
         activity_type = latest_event['type']
         if activity_type in self.VERBTONOUN:
             activity_type =  self.VERBTONOUN[activity_type]
         
-        template = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION}"
+        template = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION} {TAGS}"
         if activity_type in self.ZERODISTANCE:
-            template = "YTD for {TOTALCOUNT} {TYPE}s is {TOTALDURATION}"
+            template = "YTD for {TOTALCOUNT} {TYPE}s is {TOTALDURATION} {TAGS}"
         
         if self.getRecoveryTime(latest_event) is not None:
             template+="\nRecovery Time {RECOVERYTIME}"
-            
+        
+        tags = self.getTags(latest_event,ytd,distance_sum,duration_sum,count_sum)
+        tag_string = ' '.join(tags)
+        
         body = template.format(
             TYPE=activity_type,
             TOTALDISTANCEMILES=ytd['distance']/1609,
             TOTALDISTANCEKM=ytd['distance']/1000,
             TOTALDURATION=Utils.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
-            RECOVERYTIME=self.getRecoveryTime(latest_event)
+            RECOVERYTIME=self.getRecoveryTime(latest_event),
+            TAGS = tag_string
             )
         
         if "description" in latest_event and latest_event['description'] is not None:
@@ -432,97 +444,49 @@ class Strava:
             distance_sum+=activity['distance']
             count_sum+=activity['count']
         
-        status_template = None
-        
         name = "I"
         if Utils.getSSM("StravaClubId") is not None:
             name = "{FIRSTNAME} {LASTNAME}".format(FIRSTNAME=strava_athlete['firstname'],LASTNAME=strava_athlete['lastname'])
         
-        ytdall = "\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION} "
-        ytdactivity = "\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION} "
+        tagtemplate = {
+            'ytdall': "\nYTD for all {ALLACTIVITYCOUNT} activities {ALLACTIVITYDISTANCEMILES:0.2f}miles / {ALLACTIVITYDISTANCEKM:0.2f}km in {ALLACTIVITYDURATION} ",
+            'ytdactivity': "\nYTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION} ",
+            'activity': "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {ACTIVITYMPH}mph / {ACTIVITYKMPH}kmph - {ACTIVITYURL}"
+            }
         
-        
-        activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {ACTIVITYMPH}mph / {ACTIVITYKMPH}kmph - {ACTIVITYURL}"
         if activity_type == self.VERBTONOUN['Walk']:
-            activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}"
+            tagtemplate['activity'] = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} - {ACTIVITYURL}"
         elif activity_type == self.VERBTONOUN['Run']:
-            activity = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {MINUTEMILES}min/mile / {MINUTEKM}min/km - {ACTIVITYURL}"
+            tagtemplate['activity'] = "{NAME} did a {TYPE} of {DISTANCEMILES:0.2f}miles / {DISTANCEKM:0.2f}km in {DURATION} at {MINUTEMILES}min/mile / {MINUTEKM}min/km - {ACTIVITYURL}"
         elif activity_type in self.ZERODISTANCE:
-            activity = "{NAME} did a {TYPE} for {DURATION} - {ACTIVITYURL}"
-            ytdactivity = "\nYTD for {TOTALCOUNT} {TYPE}s in {TOTALDURATION} "
-            ytdall = "\nYTD for all {ALLACTIVITYCOUNT} activities in {ALLACTIVITYDURATION} "
+            tagtemplate['activity'] = "{NAME} did a {TYPE} for {DURATION} - {ACTIVITYURL}"
+            tagtemplate['ytdactivity'] = "\nYTD for {TOTALCOUNT} {TYPE}s in {TOTALDURATION} "
+            tagtemplate['ytdall'] = "\nYTD for all {ALLACTIVITYCOUNT} activities in {ALLACTIVITYDURATION} "
         
-        tags = []
-        
-        ytdstring = " "
-        
-        ## COMMON MILESTONES
-        if math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
-            # If the most recent activity puts the sum of all the activities in that category for the year over a 100km stone
-            ytdstring = ytdall
-            tags.append("🙌")
-        elif math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
-            # If the most recent activity puts the sum of all the activities in that category for the year over a 100mile stone
-            ytdstring = ytdall
-            tags.append("🙌")
-        if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event[self.STRAVA_DURATION_INDEX])/86400):
-            # If the most recent activity puts the sum of all the activities' duration in that category for the year over a 1day stone
-            ytdstring = ytdall
-            if activity_type == self.VERBTONOUN['Ride']:
-                tags.append("🚴")
-            elif activity_type == self.VERBTONOUN['Run']:
-                tags.append("🏃")
-            else:
-                tags.append("🌍")
-        if count_sum%100 ==0:
-            # If this is their n00th activity in this category this year 
-            ytdstring = ytdactivity
-            tags.append("👏")
-        if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
-            # If the total distance for all activities this year has just gone over a 100km stone
-            ytdstring = ytdactivity
-            tags.append("🔥")
-        if math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
-            # If the total distance for all activities this year has just gone over a 100mile stone
-            ytdstring = ytdactivity
-            tags.append("📏")
-        if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/86400):
-            # If the total duration for all activities this year has just gone over a 1day stone
-            ytdstring = ytdactivity
-            tags.append("🌍")
-        if ytd['count'] == 1:
-            # If they've just done their first activity for the year
-            tags.append("⭐")
-        if ytd['count']%10 == 0:
-            #  If they've just done a multiple of 10 activities for the entire year
-            ytdstring = ytdactivity
-            tags.append("🔟")
-        if latest_activity_mph > ytd_activity_mph*self.STRETCH_PERCENT:
-            # If they were more than 10% faster than the year average for this activity
-            ytdstring = ytdactivity
-            tags.append("🤩")
-        if latest_event['distance'] > ((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*self.STRETCH_PERCENT:
-            # If this was longer (distance) than the average by more than 5%
-            logger.info("{EVENTDISTANCE} gt {AVG}".format(EVENTDISTANCE=latest_event['distance'],AVG=((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*self.STRETCH_PERCENT))
-            ytdstring = ytdactivity
-            tags.append("💨")
-        if latest_event[self.STRAVA_DURATION_INDEX] > ((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/(ytd['count']-1))*self.STRETCH_PERCENT:
-            # If they spent longer than normal doing this activity
-            ytdstring = ytdactivity
-            tags.append("⏱️")
-        if "pr_count" in latest_event and latest_event['pr_count'] > 0:
-            tags.append("{PRCOUNT}x🔥")
-            pr_count = latest_event['pr_count']
-        if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
-            tags.append("{NUMACHIEVEMENTS}x😤")
-            achievement_count=latest_event['achievement_count']
-        
-        ## RARE MILESTONES
-        random.shuffle(tags)
+        tags = self.getTags(latest_event,ytd,distance_sum,duration_sum,count_sum)
         
         if len(tags) == 0:
+            # Nothing special. Go Home!
             return None
+        elif "⭐" in tags:
+            ytdstring = ""
+        elif "👏" in tags or "🔥" in tags or "📏" in tags or "🔟" in tags or "🤩" in tags or "💨" in tags or "⏱️" in tags:
+            ytdstring = tagtemplate['ytdactivity']
+        else:
+            ytdstring = tagtemplate['ytdall']
+            
+        if "💪" in tags or "😤" in tags:
+            ytdstring = tagtemplate['ytdactivity']
+            for i in range(len(tags)):
+                # replace some tags to include PR/Achive counts
+                if tags[i] == '💪':
+                    tags[i] = '{PRCOUNT}x💪'
+                    pr_count = latest_event['pr_count']
+                elif tags[i] == '😤':
+                    tags[i] = '{NUMACHIEVEMENTS}x😤'
+                    achievement_count=latest_event['achievement_count']
         
+        ## Extra tags for the tweet text
         if "device_name" in latest_event:
             if latest_event['device_name'] == 'Zwift':
                 tags.append("#RideOn")
@@ -535,7 +499,7 @@ class Strava:
             tags.append("#parkrun")
         
         tag_string = ' '.join(tags)
-        status_template = activity+ytdstring+tag_string
+        status_template = tagtemplate['activity']+ytdstring+tag_string
         
         status = status_template.format(
             NAME=name,
@@ -564,7 +528,67 @@ class Strava:
         
         return status
     
-
+    def getTags(self,latest_event,ytd,distance_sum,duration_sum,count_sum):
+        
+        activity_type = latest_event['type']
+        if activity_type in self.VERBTONOUN:
+            activity_type =  self.VERBTONOUN[activity_type]
+            
+        latest_event_speed = latest_event['distance']/latest_event[self.STRAVA_DURATION_INDEX]
+        ytd_speed = (ytd['distance']-latest_event['distance'])/(ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])
+            
+        tags = []
+        if math.floor(distance_sum/100000) != math.floor((distance_sum-latest_event['distance'])/100000):
+            # If the most recent activity puts the sum of all the activities in that category for the year over a 100km stone
+            tags.append("🙌")
+        elif math.floor(distance_sum/160900) != math.floor((distance_sum-latest_event['distance'])/160900):
+            # If the most recent activity puts the sum of all the activities in that category for the year over a 100mile stone
+            tags.append("🙌")
+        if math.floor(duration_sum/86400) != math.floor((duration_sum-latest_event[self.STRAVA_DURATION_INDEX])/86400):
+            # If the most recent activity puts the sum of all the activities' duration in that category for the year over a 1day stone
+            if activity_type == self.VERBTONOUN['Ride']:
+                tags.append("🚴")
+            elif activity_type == self.VERBTONOUN['Run']:
+                tags.append("🏃")
+            else:
+                tags.append("🌍")
+        if count_sum%100 ==0:
+            # If this is their n00th activity in this category this year 
+            tags.append("👏")
+        if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
+            # If the total distance for all activities this year has just gone over a 100km stone
+            tags.append("🔥")
+        if math.floor(ytd['distance']/160900) != math.floor((ytd['distance']-latest_event['distance'])/160900):
+            # If the total distance for all activities this year has just gone over a 100mile stone
+            tags.append("📏")
+        if math.floor(ytd['duration']/86400) != math.floor((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/86400):
+            # If the total duration for all activities this year has just gone over a 1day stone
+            tags.append("🌍")
+        if ytd['count'] == 1:
+            # If they've just done their first activity for the year
+            tags.append("⭐")
+        if ytd['count']%10 == 0:
+            #  If they've just done a multiple of 10 activities for the entire year
+            tags.append("🔟")
+        if latest_event_speed > ytd_speed*self.STRETCH_PERCENT:
+            # If they were more than n% faster than the year average for this activity
+            tags.append("🤩")
+        if latest_event['distance'] > ((ytd['distance']-latest_event['distance'])/(ytd['count']-1))*self.STRETCH_PERCENT:
+            # If this was longer (distance) than the average by more than n%
+            tags.append("💨")
+        if latest_event[self.STRAVA_DURATION_INDEX] > ((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/(ytd['count']-1))*self.STRETCH_PERCENT:
+            # If they spent n% longer than normal doing this activity
+            tags.append("⏱️")
+        if "pr_count" in latest_event and latest_event['pr_count'] > 0:
+            tags.append("{PRCOUNT}x🔥")
+            
+        if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
+            tags.append("{NUMACHIEVEMENTS}x😤")
+            
+        ## RARE MILESTONES
+        random.shuffle(tags)
+        
+        return tags
                 
     def _get(self,endpoint):
         counter = 0
