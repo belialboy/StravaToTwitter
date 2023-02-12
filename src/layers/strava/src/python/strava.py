@@ -470,7 +470,7 @@ class Strava:
             return None
         elif "⭐" in tags:
             ytdstring = ""
-        elif "👏" in tags or "🔥" in tags or "📏" in tags or "🔟" in tags or "🤩" in tags or "💨" in tags or "⏱️" in tags:
+        elif "🇱" in tags or "🔥" in tags or "📏" in tags or "🔟" in tags or "🤩" in tags or "💨" in tags or "⏱️" in tags:
             ytdstring = tagtemplate['ytdactivity']
         else:
             ytdstring = tagtemplate['ytdall']
@@ -551,10 +551,10 @@ class Strava:
             elif activity_type == self.VERBTONOUN['Run']:
                 tags.append("🏃")
             else:
-                tags.append("🌍")
-        if count_sum%100 ==0:
+                tags.append("⌛")
+        if count_sum%50 ==0:
             # If this is their n00th activity in this category this year 
-            tags.append("👏")
+            tags.append("🇱")
         if math.floor(ytd['distance']/100000) != math.floor((ytd['distance']-latest_event['distance'])/100000):
             # If the total distance for all activities this year has just gone over a 100km stone
             tags.append("🔥")
@@ -580,10 +580,9 @@ class Strava:
             # If they spent n% longer than normal doing this activity
             tags.append("⏱️")
         if "pr_count" in latest_event and latest_event['pr_count'] > 0:
-            tags.append("{PRCOUNT}x🔥")
-            
+            tags.append("💪")
         if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
-            tags.append("{NUMACHIEVEMENTS}x😤")
+            tags.append("😤")
             
         ## RARE MILESTONES
         random.shuffle(tags)
