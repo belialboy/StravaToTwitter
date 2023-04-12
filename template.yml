@@ -253,7 +253,7 @@ Resources:
         Schedule:
           Type: Schedule
           Properties:
-            Schedule: 'cron(59 23 * * ? *)'
+            Schedule: 'cron(59 22 * * ? *)'
             Name: ScheduleForStravaEOD
             Description: Executes the Strava Daily catalog function
             Enabled: true
