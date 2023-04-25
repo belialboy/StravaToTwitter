@@ -439,9 +439,6 @@ class Strava:
         ytd_activity_mph = Utils.secAndMetersToMPH(ytd['distance']-latest_event['distance'],ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])
         latest_activity_kmph = Utils.secAndMetersToKmPH(latest_event['distance'],latest_event[self.STRAVA_DURATION_INDEX])
         
-        achievement_count = 0
-        pr_count = 0
-        
         duration_sum =0
         distance_sum =0
         count_sum=0
@@ -474,23 +471,12 @@ class Strava:
         if len(tags) == 0:
             # Nothing special. Go Home!
             return None
-        elif "⭐" in tags:
+        elif "💪" in tags:
             ytdstring = ""
         elif "🇱" in tags or "🔥" in tags or "📏" in tags or "🔟" in tags or "🤩" in tags or "💨" in tags or "⏱️" in tags:
             ytdstring = tagtemplate['ytdactivity']
         else:
             ytdstring = tagtemplate['ytdall']
-            
-        if "💪" in tags or "😤" in tags:
-            ytdstring = tagtemplate['ytdactivity']
-            for i in range(len(tags)):
-                # replace some tags to include PR/Achive counts
-                if tags[i] == '💪':
-                    tags[i] = '{PRCOUNT}x💪'
-                    pr_count = latest_event['pr_count']
-                elif tags[i] == '😤':
-                    tags[i] = '{NUMACHIEVEMENTS}x😤'
-                    achievement_count=latest_event['achievement_count']
         
         ## Extra tags for the tweet text
         if "device_name" in latest_event:
@@ -524,8 +510,6 @@ class Strava:
             ALLACTIVITYCOUNT=count_sum,
             ACTIVITYMPH=latest_activity_mph,
             ACTIVITYKMPH=latest_activity_kmph,
-            NUMACHIEVEMENTS=achievement_count,
-            PRCOUNT=pr_count,
             MINUTEMILES=Utils.getMinMiles(latest_event[self.STRAVA_DURATION_INDEX],latest_event['distance']),
             MINUTEKM=Utils.getMinKm(latest_event[self.STRAVA_DURATION_INDEX],latest_event['distance'])
             )
@@ -572,7 +556,7 @@ class Strava:
             tags.append("🌍")
         if ytd['count'] == 1:
             # If they've just done their first activity for the year
-            tags.append("⭐")
+            tags.append("💪")
         if ytd['count']%10 == 0:
             #  If they've just done a multiple of 10 activities for the entire year
             tags.append("🔟")
@@ -585,10 +569,12 @@ class Strava:
         if latest_event[self.STRAVA_DURATION_INDEX] > ((ytd['duration']-latest_event[self.STRAVA_DURATION_INDEX])/(ytd['count']-1))*self.STRETCH_PERCENT:
             # If they spent n% longer than normal doing this activity
             tags.append("⏱️")
-        if "pr_count" in latest_event and latest_event['pr_count'] > 0:
-            tags.append("💪")
+        
         if "achievement_count" in latest_event and latest_event['achievement_count'] > 0:
-            tags.append("😤")
+            pr_count = 0
+            if "pr_count" in latest_event and latest_event['pr_count'] > 0:
+                pr_count = latest_event['pr_count']
+            tags.append('{PRs}{ACHs}'.format(PRs = "🌟"*min(pr_count,5), ACHs = "⭐"*max(min(latest_event['achievement_count']-pr_count,5),0))
             
         ## RARE MILESTONES
         random.shuffle(tags)
