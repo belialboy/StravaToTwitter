@@ -387,7 +387,7 @@ class Strava:
         
         template = "YTD for {TOTALCOUNT} {TYPE}s {TOTALDISTANCEMILES:0.2f}miles / {TOTALDISTANCEKM:0.2f}km in {TOTALDURATION} {TAGS}"
         if activity_type in self.ZERODISTANCE:
-            template = "YTD for {TOTALCOUNT} {TYPE}s is {TOTALDURATION} {TAGS}"
+            template = "YTD for {TOTALCOUNT} {TYPE}s in {TOTALDURATION} {TAGS}"
         
         if self.getRecoveryTime(latest_event) is not None:
             template+="\nRecovery Time {RECOVERYTIME}"
