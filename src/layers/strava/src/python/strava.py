@@ -8,6 +8,9 @@ import math
 import os
 import traceback
 import random
+import sys
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 
 logger = logging.getLogger()
 
@@ -69,6 +72,8 @@ class Strava:
             self.athlete = self._getAthleteFromDDB()
             if self.athlete is not None:
                 self.tokens = json.loads(self.athlete['tokens'])
+                if 'spotify' in self.athlete:
+                    self.spotify = json.loads(self.athlete['spotify'])
     
     def _newAthlete(self,code):
         
@@ -407,6 +412,21 @@ class Strava:
         
         if "description" in latest_event and latest_event['description'] is not None:
             body = "{DESC}\n\n{BODY}".format(DESC=latest_event['description'],BODY=body)
+            
+        try:
+            if hasattr(self,"spotify"):
+                spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(client_id = self.spotify['client_id'],client_secret = self.spotify['client_secret']))
+                dt_msecs = datetime.datetime.strptime(latest_event['start_date'],'%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000
+                track_list = spotify.current_user_recently_played(limit=50, after=dt_msecs)
+                logger.info(track_list)
+                spotify_string = "\n\nI listened to the following tracks:\n"
+                for track in track_list:
+                    spotify_string+="* {ARTIST} - {TRACK}\n".format(TRACK = track['name'], ARTIST = track['artist'])
+                body += spotify_string
+                
+        except Exception as e:
+            logger.error("Trying to get Spotify track listing")
+            logger.error(e)
             
         logger.info("Updating Strava Description String: '{STRING}'".format(STRING=body))
             
