@@ -574,7 +574,7 @@ class Strava:
             pr_count = 0
             if "pr_count" in latest_event and latest_event['pr_count'] > 0:
                 pr_count = latest_event['pr_count']
-            tags.append('{PRs}{ACHs}'.format(PRs = "🌟"*min(pr_count,5), ACHs = "⭐"*max(min(latest_event['achievement_count']-pr_count,5),0))
+            tags.append('{PRs}{ACHs}'.format(PRs = "🌟"*min(pr_count,5), ACHs = "⭐"*max(min(latest_event['achievement_count']-pr_count,5),0)))
             
         ## RARE MILESTONES
         random.shuffle(tags)
