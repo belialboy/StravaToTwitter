@@ -125,7 +125,7 @@ def lambda_handler(event, context):
         #Update the activity description
         try:
             spotifyliststring = None
-            if strava.hasattr(strava,"spotify"):
+            if hasattr(strava,"spotify"):
                 spotifyliststring = getSpotifyTrackList(strava.spotify,activity['start_date'])
                 
             result = strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity,spotifytracks=spotifyliststring)
