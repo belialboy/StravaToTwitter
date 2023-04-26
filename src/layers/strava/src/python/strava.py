@@ -364,7 +364,7 @@ class Strava:
         return content
     
     def updateActivityDescription(self, athlete_year_stats: dict, latest_event: dict, spotifytracks = None):
-        if spotifytracks not None:
+        if spotifytracks is not None:
             body = {"description": "{PERFORMANCE}\n\n{TRACKS}".format(PERFORMANCE=self.makeStravaDescriptionString(athlete_year_stats,latest_event),TRACKS = spotifytracks)}
         else:
             body = {"description": self.makeStravaDescriptionString(athlete_year_stats,latest_event)}
