@@ -13,7 +13,11 @@ from io import BytesIO
 from botocore.exceptions import ClientError
 from strava import Strava
 from strava import Utils
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import sys
 import traceback
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -120,7 +124,11 @@ def lambda_handler(event, context):
     
         #Update the activity description
         try:
-            result = strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity)
+            spotifyliststring = None
+            if strava.hasattr(strava,"spotify"):
+                spotifyliststring = getSpotifyTrackList(strava.spotify,activity['start_date'])
+                
+            result = strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity,spotifytracks=spotifyliststring)
         except Exception as e:
             logger.error(traceback.format_exc())
             logger.error("Failed to update activity {ID} description; trying to continue.".format(ID=activity['id']))
@@ -147,3 +155,23 @@ def getTwitterClient():
     else:
         print("No twitter credentials found, so passing")
     return None
+    
+def getSpotifyTrackList(tokens,start_date):
+    try:
+        spotify_string = None
+        logger.debug("Making Spotify client")
+        client = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(client_id = tokens['client_id'],client_secret = tokens['client_secret']))
+        logger.debug("Making time as msecs")
+        dt_msecs = datetime.datetime.strptime(start_date,'%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000
+        logger.debug("Getting track listing from Spotify")
+        track_list = client.current_user_recently_played(limit=50, after=dt_msecs)
+        logger.info(track_list)
+        spotify_string = "I listened to the following tracks:\n"
+        logger.debug("Building tracklist")
+        for track in track_list:
+            spotify_string+="* {ARTIST} - {TRACK}\n".format(TRACK = track['name'], ARTIST = track['artist'])
+    except Exception as e:
+        logger.error("Trying to get Spotify track listing")
+        logger.error(e)
+    logger.debug("Profit!")
+    return spotify_string

@@ -9,8 +9,6 @@ import os
 import traceback
 import random
 import sys
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
 
 logger = logging.getLogger()
 
@@ -365,8 +363,11 @@ class Strava:
             }
         return content
     
-    def updateActivityDescription(self, athlete_year_stats: dict, latest_event: dict):
-        body = {"description": self.makeStravaDescriptionString(athlete_year_stats,latest_event)}
+    def updateActivityDescription(self, athlete_year_stats: dict, latest_event: dict, spotifytracks = None):
+        if spotifytracks not None:
+            body = {"description": "{PERFORMANCE}\n\n{TRACKS}".format(PERFORMANCE=self.makeStravaDescriptionString(athlete_year_stats,latest_event),TRACKS = spotifytracks)}
+        else:
+            body = {"description": self.makeStravaDescriptionString(athlete_year_stats,latest_event)}
         endpoint = "{STRAVA}/activities/{ID}".format(STRAVA=self.STRAVA_API_URL,ID=latest_event['id'])
         if self._put(endpoint,body) is None:
             return False
@@ -412,21 +413,6 @@ class Strava:
         
         if "description" in latest_event and latest_event['description'] is not None:
             body = "{DESC}\n\n{BODY}".format(DESC=latest_event['description'],BODY=body)
-            
-        try:
-            if hasattr(self,"spotify"):
-                spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(client_id = self.spotify['client_id'],client_secret = self.spotify['client_secret']))
-                dt_msecs = datetime.datetime.strptime(latest_event['start_date'],'%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000
-                track_list = spotify.current_user_recently_played(limit=50, after=dt_msecs)
-                logger.info(track_list)
-                spotify_string = "\n\nI listened to the following tracks:\n"
-                for track in track_list:
-                    spotify_string+="* {ARTIST} - {TRACK}\n".format(TRACK = track['name'], ARTIST = track['artist'])
-                body += spotify_string
-                
-        except Exception as e:
-            logger.error("Trying to get Spotify track listing")
-            logger.error(e)
             
         logger.info("Updating Strava Description String: '{STRING}'".format(STRING=body))
             
