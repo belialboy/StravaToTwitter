@@ -37,16 +37,22 @@ def lambda_handler(event, context):
     stravaClientSecret=Utils.getSSM("StravaClientSecret")
         
     if 'reset' in event:
-        logger.info("Resetting {}".format(event['reset']))
+        
         if event['reset'] == 'ALL':
             AthleteIds = getIds()
         else:
-            AthleteIds = [event['reset']]
+            AthleteIds = event['reset']
             
-        for athleteId in AthleteIds:        
+        logger.info("Resetting {}".format(AthleteIds))
+        count=0
+        for athleteId in AthleteIds:
+            logger.info("Processing {}".format(athleteId))
             strava = Strava(athleteId=athleteId,stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
             strava.flattenTotals()
             strava.buildTotals()
+            count+=1
+            logger.info("Done {COUNT}. {REMAIN} to go".format(COUNT=count, REMAIN=len(AthleteIds)-count))
+            logger.info(AthleteIds[count:])
     else:
         
         # Get some google connectivity
