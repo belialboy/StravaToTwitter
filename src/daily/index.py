@@ -38,9 +38,15 @@ def lambda_handler(event, context):
         
     if 'reset' in event:
         logger.info("Resetting {}".format(event['reset']))
-        strava = Strava(athleteId=event['reset'],stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
-        strava.flattenTotals()
-        strava.buildTotals()
+        if event['reset'] == 'ALL':
+            AthleteIds = getIds()
+        else:
+            AthleteIds = [event['reset']]
+            
+        for athleteId in AthleteIds:        
+            strava = Strava(athleteId=athleteId,stravaClientId=stravaClientId,stravaClientSecret=stravaClientSecret)
+            strava.flattenTotals()
+            strava.buildTotals()
     else:
         
         # Get some google connectivity
