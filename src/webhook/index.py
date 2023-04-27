@@ -162,14 +162,15 @@ def getSpotifyTrackList(tokens,start_date):
         logger.debug("Making Spotify client")
         client = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(client_id = tokens['client_id'],client_secret = tokens['client_secret']))
         logger.debug("Making time as msecs")
-        dt_msecs = datetime.datetime.strptime(start_date,'%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000
+        dt_msecs = datetime.strptime(start_date,'%Y-%m-%dT%H:%M:%SZ').timestamp() * 1000
         logger.debug("Getting track listing from Spotify")
         track_list = client.current_user_recently_played(limit=50, after=dt_msecs)
         logger.info(track_list)
-        spotify_string = "I listened to the following tracks:\n"
-        logger.debug("Building tracklist")
-        for track in track_list:
-            spotify_string+="* {ARTIST} - {TRACK}\n".format(TRACK = track['name'], ARTIST = track['artist'])
+        if len(track_list) >0:
+            spotify_string = "I listened to the following tracks:\n"
+            logger.debug("Building tracklist")
+            for track in track_list:
+                spotify_string+="* {ARTIST} - {TRACK}\n".format(TRACK = track['name'], ARTIST = track['artist'])
     except Exception as e:
         logger.error("Trying to get Spotify track listing")
         logger.error(e)
