@@ -2,6 +2,7 @@
 import json
 # pylint: disable=fixme, import-error
 from twython import Twython
+from twython import TwythonAuthError
 from datetime import datetime
 import time
 import requests
@@ -130,6 +131,11 @@ def lambda_handler(event, context):
                 
             result = strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity,spotifytracks=spotifyliststring)
         except Exception as e:
+            logger.error(traceback.format_exc())
+            logger.error("Failed to update activity {ID} description; trying to continue.".format(ID=activity['id']))
+            
+            result = strava.updateActivityDescription(athlete_year_stats=content[year],latest_event=activity)
+        except TwythonAuthError as e:
             logger.error(traceback.format_exc())
             logger.error("Failed to update activity {ID} description; trying to continue.".format(ID=activity['id']))
             
