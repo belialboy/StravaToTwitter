@@ -395,8 +395,8 @@ class Strava:
         if activity_type in self.ZERODISTANCE:
             template = "YTD for {TOTALCOUNT} {TYPE}s in {TOTALDURATION} {TAGS}"
         
-        if self.getRecoveryTime(latest_event) is not None:
-            template+="\nRecovery Time {RECOVERYTIME}"
+        if self.getEffortQ(latest_event) is not None:
+            template+="\n{EFFORT:0.1f}% Estimated Effort"
         
         tags = self.getTags(latest_event,ytd,distance_sum,duration_sum,count_sum)
         tag_string = ' '.join(tags)
@@ -407,7 +407,7 @@ class Strava:
             TOTALDISTANCEKM=ytd['distance']/1000,
             TOTALDURATION=Utils.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
-            RECOVERYTIME=self.getRecoveryTime(latest_event),
+            RECOVERYTIME=self.getEffortQ(latest_event),
             TAGS = tag_string
             )
         
@@ -418,13 +418,13 @@ class Strava:
             
         return body
         
-    def getRecoveryTime(self,event):
+    def getEffortQ(self,event):
         if "average_heartrate" not in event:
             return None
     
         wrt_sec = ((event['average_heartrate']*(event[self.STRAVA_DURATION_INDEX]/60))/200)*3600
         
-        return Utils.secsToStr(min(int(wrt_sec),4*24*60*60))
+        return min(int(wrt_sec),4*24*60*60) / (4*24*60*60)
         
     def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         

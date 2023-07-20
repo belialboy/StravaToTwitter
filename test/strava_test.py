@@ -115,8 +115,8 @@ class TestStrava(unittest.TestCase):
       tokens={"expires_at":1234567890,"access_token":"abcdef1234567890","refresh_token":"0987654321fedcba"}
       mock_method.return_value = {"tokens": json.dumps(tokens)}
       strava=Strava(athleteId = 1234567)
-      self.assertEqual(strava.getRecoveryTime({'average_heartrate':120,'moving_time':60*60}),Utils.secsToStr(129600))
-      self.assertEqual(strava.getRecoveryTime({'average_heartrate':180,'moving_time':60*60*3}),Utils.secsToStr(345600))
+      self.assertEqual(strava.getEffortQ({'average_heartrate':120,'moving_time':60*60}),129600 / (4*24*60*60))
+      self.assertEqual(strava.getEffortQ({'average_heartrate':180,'moving_time':60*60*3}),345600 / (4*24*60*60))
 
   
 if __name__ == '__main__':
