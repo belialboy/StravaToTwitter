@@ -407,7 +407,7 @@ class Strava:
             TOTALDISTANCEKM=ytd['distance']/1000,
             TOTALDURATION=Utils.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
-            RECOVERYTIME=self.getEffortQ(latest_event),
+            EFFORT=self.getEffortQ(latest_event),
             TAGS = tag_string
             )
         
