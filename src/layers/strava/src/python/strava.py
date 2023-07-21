@@ -407,7 +407,7 @@ class Strava:
             TOTALDISTANCEKM=ytd['distance']/1000,
             TOTALDURATION=Utils.secsToStr(ytd['duration']),
             TOTALCOUNT=ytd['count'],
-            EFFORT=self.getEffortQ(latest_event)*100.0,
+            EFFORT=self.getEffortQ(latest_event),
             TAGS = tag_string
             )
         
@@ -424,7 +424,7 @@ class Strava:
     
         wrt_sec = ((event['average_heartrate']*(event[self.STRAVA_DURATION_INDEX]/60))/200)*3600
         
-        return min(int(wrt_sec),4*24*60*60) / (4*24*60*60)
+        return (min(int(wrt_sec),4*24*60*60) / (4*24*60*60))*100
         
     def makeTwitterString(self,athlete_year_stats: dict,latest_event: dict):
         
