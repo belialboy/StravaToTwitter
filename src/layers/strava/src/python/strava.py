@@ -63,6 +63,7 @@ class Strava:
         self.ddbTableName=Utils.getEnv("totalsTable")
         self.ddbDetailTableName=Utils.getEnv("detailsTable")
         
+        self.solly = False ## If it's false, and we have the permission to, we'll write to the strava activity
         if auth is not None:
             self.registrationResult = self._newAthlete(auth)
         elif athleteId is not None:
@@ -72,6 +73,8 @@ class Strava:
                 self.tokens = json.loads(self.athlete['tokens'])
                 if 'spotify' in self.athlete:
                     self.spotify = json.loads(self.athlete['spotify'])
+                if 'solly' in self.athlete:
+                    self.solly = True
     
     def _newAthlete(self,code):
         
@@ -364,6 +367,8 @@ class Strava:
         return content
     
     def updateActivityDescription(self, athlete_year_stats: dict, latest_event: dict, spotifytracks = None):
+        if self.solly:
+            return False
         if spotifytracks is not None:
             body = {"description": "{PERFORMANCE}\n\n{TRACKS}".format(PERFORMANCE=self.makeStravaDescriptionString(athlete_year_stats,latest_event),TRACKS = spotifytracks)}
         else:
