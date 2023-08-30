@@ -5,7 +5,6 @@ env:
     ssmPrefix: "p"
   parameter-store:
     pCodeBucket: "pStrava2twitterCodeBucket"
-    pPushBullet: "pPushBullet"
 phases:
   install:
     runtime-versions:
@@ -25,5 +24,3 @@ phases:
     commands:
       - echo "Deploy"
       - sam deploy --stack-name $stackName --s3-bucket $pCodeBucket --capabilities "CAPABILITY_IAM" --parameter-overrides "ParameterKey=pSSMPrefix,ParameterValue=$ssmPrefix"
-      # Send a Pushbullet notification about the update to the stack
-      - curl --silent -u """$pPushBullet"":" -d type="note" -d body="Updated $stackName" -d title="AWS Codebuild" 'https://api.pushbullet.com/v2/pushes'
